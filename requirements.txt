@@ -1,0 +1,2 @@
+pytorch-lightning==1.7.7
+allennlp==2.9.3
