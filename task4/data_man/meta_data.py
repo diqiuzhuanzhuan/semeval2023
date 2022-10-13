@@ -8,6 +8,7 @@ from typing import Dict, List, Union
 import os
 import pandas as pd
 from pathlib import Path
+from task4.configuration.config import logging
 
 
 @dataclass
@@ -74,7 +75,7 @@ def read_arguments_from_file(file: Union[bytes, str, os.PathLike]) -> List[Argum
         List[ArgumentItem]: _description_
     """
     data = pd.read_csv(Path(file).as_posix(), delimiter='\t')
-    print('read {} arguments from {}.'.format(len(data), str(file)))
+    logging.info('read {} arguments from {}.'.format(len(data), str(file)))
     return [ArgumentItem.from_dict(data.iloc[i]) for i in range(len(data))]
 
 
@@ -88,7 +89,7 @@ def read_labels_from_file(file: Union[bytes, str, os.PathLike]) -> List[LabelIte
         List[LabelItem]: _description_
     """
     data = pd.read_csv(Path(file).as_posix(), delimiter='\t')
-    print('read {} labels from {}.'.format(len(data), str(file)))
+    logging.info('read {} labels from {}.'.format(len(data), str(file)))
     return [LabelItem.from_dict(data.iloc[i]) for i in range(len(data))]
 
 
