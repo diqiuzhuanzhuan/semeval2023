@@ -13,7 +13,12 @@ import functools
 
 
 class ArgumentModel(Registrable):
-    pass
+
+    def log_metrics(self, pred_results, loss=0.0, suffix='', on_step=False, on_epoch=True):
+        for key in pred_results:
+            self.log(suffix + key, pred_results[key], on_step=on_step, on_epoch=on_epoch, prog_bar=True, logger=True)
+
+        self.log(suffix + 'loss', loss, on_step=on_step, on_epoch=on_epoch, prog_bar=True, logger=True)
 
 @ArgumentModel.register('baseline_argument_model') 
 class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
@@ -22,18 +27,18 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
         self, 
         encoder_model: AnyStr='bert-base-uncased',
         lr: float=1e-5,
-        value_types=20
+        value_types=20,
+        warmup_steps: int=1000,
         ) -> None:
         super().__init__()
         self.encoder = AutoModel.from_pretrained(encoder_model)
-        
         self.value_types = value_types
         self.multi_label_weight = torch.nn.Linear(self.encoder.config.hidden_size, self.value_types)
         self.lr = lr
+        self.warmup_steps = warmup_steps
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.01)
-
         warmup_steps = self.warmup_steps
         def fn(warmup_steps, step):
             if step < warmup_steps:
@@ -79,19 +84,24 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
             return_dict['loss'] = loss
 
         return return_dict
-        
 
     def training_step(self, batch, batch_idx):
-        pass
+        outputs = self.forward_step(batch=batch)
+        self.log_metrics({}, outputs['loss'], suffix='train', on_step=True, on_epoch=True)
+        return outputs['loss']
 
-    def validation_step(self, *args, **kwargs):
-        return super().validation_step(*args, **kwargs)
+    def validation_step(self, batch, batch_idx):
+        outputs = self.forward_step(batch=batch)
+        self.log_metrics({}, outputs['loss'], suffix='val', on_step=True, on_epoch=True)
+        return outputs
 
-    def test_step(self, *args, **kwargs):
-        return super().test_step(*args, **kwargs)
+    def test_step(self, batch, batch_idx):
+        outputs = self.forward_step(batch=batch)
+        return outputs
     
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
-        return super().predict_step(batch, batch_idx, dataloader_idx)
+        outputs = self.forward_step(batch=batch)
+        return outputs
 
 
 if __name__ == '__main__':
