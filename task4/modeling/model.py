@@ -3,7 +3,6 @@
 # email: diqiuzhuanzhuan@gmail.com
 
 
-from cProfile import label
 from allennlp.common.registrable import Registrable
 from allennlp.common.params import Params
 import pytorch_lightning as pl
