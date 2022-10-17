@@ -10,6 +10,8 @@ from typing import AnyStr, Any, Union, Optional
 from transformers import AutoModel
 import torch
 import functools
+from task4.metric.value_metric import ValueMetric
+from task4.data_man.meta_data import get_id_to_type
 
 
 class ArgumentModel(Registrable):
@@ -36,6 +38,7 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
         self.multi_label_weight = torch.nn.Linear(self.encoder.config.hidden_size, self.value_types)
         self.lr = lr
         self.warmup_steps = warmup_steps
+        self.metric = ValueMetric(id_to_type=get_id_to_type(), rare_type=[])
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.01)
@@ -74,7 +77,7 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
         )
         cls_hidden_state = outputs.last_hidden_state[:, 0, :]  # get [CLS]
         logits = self.multi_label_weight(cls_hidden_state)
-        predict = torch.nn.Sigmoid()(logits)
+        predict = (torch.nn.Sigmoid()(logits) > 0.5) * 1.0
         return_dict = {
             'logits': logits, 
             'predict': predict
@@ -82,12 +85,14 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
         if label_ids is not None:
             loss = self.compute_loss(logits, label_ids)
             return_dict['loss'] = loss
+            self.metric.update(preds=predict, target=label_ids)
+            return_dict['metric'] = self.metric.compute()
 
         return return_dict
 
     def training_step(self, batch, batch_idx):
         outputs = self.forward_step(batch=batch)
-        self.log_metrics({}, outputs['loss'], suffix='train', on_step=True, on_epoch=True)
+        self.log_metrics(outputs['metric'], outputs['loss'], suffix='train', on_step=True, on_epoch=True)
         return outputs['loss']
 
     def validation_step(self, batch, batch_idx):

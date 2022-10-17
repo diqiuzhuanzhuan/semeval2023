@@ -8,10 +8,11 @@ import collections
 import torch
 
 
-class EventTypeMetric(Metric):
+class ValueMetric(Metric):
+    full_state_update: bool = True
 
-    def __init__(self, id_to_type, rare_type, compute_on_step: Optional[bool] = None) -> None:
-        super().__init__(compute_on_step)
+    def __init__(self, id_to_type, rare_type) -> None:
+        super().__init__()
         self.event_ignore_index = 2
         self.id_to_type = id_to_type
         self.rare_type = set(rare_type)
@@ -22,6 +23,10 @@ class EventTypeMetric(Metric):
         self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
 
     def update(self, preds: List[List], target: List[List]):
+        if isinstance(preds, torch.Tensor):
+            preds = preds.cpu().numpy().tolist()
+        if isinstance(target,torch.Tensor):
+            target = target.cpu().numpy().tolist()
         for p, t in zip(preds, target):
             self._update(preds=p, target=t)
             self.total += 1
@@ -40,6 +45,7 @@ class EventTypeMetric(Metric):
                     self.fp[self.id_to_type[i]] += 1
 
     def compute(self):
+        total_f1 = 0.0
         for i in range(len(self.id_to_type)):
             type_string = self.id_to_type[i]
             p_support = self.tp[type_string] + self.fp[type_string]
@@ -56,8 +62,9 @@ class EventTypeMetric(Metric):
                 f1 = precision * recall
             else:
                 f1 = (2 * precision * recall)/(precision + recall)
+            total_f1 += f1 / len(self.id_to_type)
         score = {
-            'f1': f1
+            'f1': total_f1
         }
         return score
         

@@ -3,7 +3,9 @@
 # email: diqiuzhuanzhuan@gmail.com
 
 
+import collections
 from dataclasses import dataclass
+import enum
 from typing import Dict, List, Union
 import os
 import pandas as pd
@@ -42,6 +44,11 @@ LABEL_NAME = ['Self-direction: thought', 'Self-direction: action', 'Stimulation'
     'Security: societal', 'Tradition', 'Conformity: rules', 'Conformity: interpersonal', 'Humility', 'Benevolence: caring', 'Benevolence: dependability', 'Universalism: concern',
     'Universalism: nature', 'Universalism: tolerance', 'Universalism: objectivity']
 
+def get_id_to_type():
+    return_map = dict()
+    for i, ele in enumerate(LABEL_NAME):
+        return_map[i] = ele
+    return return_map
 
 @dataclass        
 class LabelItem:
