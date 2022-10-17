@@ -90,7 +90,7 @@ class BaselineArgumentDataModule(ArgumentDataModule):
         if stage == 'fit':
             self.reader.read_data(config.train_file['arguments'], config.train_file['labels'])
         if stage == 'validate':
-            pass
+            self.reader.read_data(config.train_file['arguments'], config.train_file['labels'])
 
         if stage == 'test':
             pass
@@ -111,7 +111,7 @@ class BaselineArgumentDataModule(ArgumentDataModule):
         attention_mask_tensor = torch.empty(size=[batch_size, max_len], dtype=torch.long).fill_(0)
         if label_ids_batch:
             max_label_len = max([len(_) for _ in label_ids_batch])
-            label_ids_tensor = torch.empty(size=[batch_size, max_label_len], dtype=torch.long).fill_(0)
+            label_ids_tensor = torch.empty(size=[batch_size, max_label_len], dtype=torch.float).fill_(0)
         else:
             label_ids_tensor = None
         for i in range(batch_size):
@@ -121,7 +121,7 @@ class BaselineArgumentDataModule(ArgumentDataModule):
             token_type_ids_tensor[i][0:available_length] = torch.tensor(token_type_ids, dtype=torch.long)
             attention_mask_tensor[i][0:available_length] = torch.tensor(attention_mask, dtype=torch.long)
             if label_ids_tensor is not None:
-                label_ids_tensor[i] = torch.tensor(label_ids, dtype=torch.long)
+                label_ids_tensor[i] = torch.tensor(label_ids, dtype=torch.float)
 
         return argument_id, input_ids_tensor, token_type_ids_tensor, attention_mask_tensor, label_ids_tensor
 

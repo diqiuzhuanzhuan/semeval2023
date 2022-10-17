@@ -79,7 +79,7 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
             'logits': logits, 
             'predict': predict
         }
-        if label_ids:
+        if label_ids is not None:
             loss = self.compute_loss(logits, label_ids)
             return_dict['loss'] = loss
 
