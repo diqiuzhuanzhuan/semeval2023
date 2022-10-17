@@ -69,8 +69,13 @@ class BaselineArgumentDataset(ArgumentsDataset):
             return self.encode_input(self.instances[index], self.labels[index])
         return self.encode_input(self.instances[index], None)
 
+        
+class ArgumentDataModule(pl.LightningDataModule, Registrable):
+    pass
 
-class ArgumentsDataModule(pl.LightningDataModule):
+
+@ArgumentDataModule.register('baseline_argument_data_module')
+class BaselineArgumentDataModule(ArgumentDataModule):
 
     def __init__(
         self, 
@@ -144,7 +149,13 @@ if __name__ == "__main__":
     arg_dataset.read_data(config.train_file['arguments'], config.train_file['labels'])
     logging.info(arg_dataset[0])
 
-    adm = ArgumentsDataModule(reader=arg_dataset, batch_size=2)
+    adm = ArgumentDataModule.from_params(Params({
+        'type': 'baseline_argument_data_module',
+        'reader': Params({
+            'type': 'baseline_argument_dataset'    
+        }),
+        'batch_size': 2
+    }))
     adm.setup(stage='fit')
     for batch in adm.train_dataloader():
         print(batch)
