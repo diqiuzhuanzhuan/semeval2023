@@ -95,10 +95,18 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
         self.log_metrics(outputs['metric'], outputs['loss'], suffix='train', on_step=True, on_epoch=True)
         return outputs['loss']
 
+    def on_train_epoch_start(self) -> None:
+        self.metric.reset()
+        return super().on_train_epoch_start()
+
     def validation_step(self, batch, batch_idx):
         outputs = self.forward_step(batch=batch)
-        self.log_metrics({}, outputs['loss'], suffix='val', on_step=True, on_epoch=True)
+        self.log_metrics(outputs['metric'], outputs['loss'], suffix='val', on_step=True, on_epoch=True)
         return outputs
+
+    def on_validation_epoch_start(self) -> None:
+        self.metric.reset()
+        return super().on_validation_epoch_start()
 
     def test_step(self, batch, batch_idx):
         outputs = self.forward_step(batch=batch)
