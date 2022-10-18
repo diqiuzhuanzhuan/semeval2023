@@ -3,9 +3,7 @@
 # email: diqiuzhuanzhuan@gmail.com
 
 
-import collections
 from dataclasses import dataclass
-import enum
 from typing import Dict, List, Union
 import os
 import pandas as pd

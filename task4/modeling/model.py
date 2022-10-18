@@ -22,8 +22,10 @@ class ArgumentModel(Registrable):
 
         self.log(suffix + 'loss', loss, on_step=on_step, on_epoch=on_epoch, prog_bar=True, logger=True)
 
+
 @ArgumentModel.register('baseline_argument_model') 
 class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
+
     
     def __init__(
         self, 
@@ -92,7 +94,7 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
 
     def training_step(self, batch, batch_idx):
         outputs = self.forward_step(batch=batch)
-        self.log_metrics(outputs['metric'], outputs['loss'], suffix='train', on_step=True, on_epoch=True)
+        self.log_metrics(outputs['metric'], outputs['loss'], suffix='train_', on_step=True, on_epoch=False)
         return outputs['loss']
 
     def on_train_epoch_start(self) -> None:
@@ -101,12 +103,18 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
 
     def validation_step(self, batch, batch_idx):
         outputs = self.forward_step(batch=batch)
-        self.log_metrics(outputs['metric'], outputs['loss'], suffix='val', on_step=True, on_epoch=True)
+        self.log_metrics(outputs['metric'], outputs['loss'], suffix='val_', on_step=True, on_epoch=False)
         return outputs
 
     def on_validation_epoch_start(self) -> None:
         self.metric.reset()
         return super().on_validation_epoch_start()
+
+    def on_validation_epoch_end(self, outputs) -> None:
+        average_loss = torch.mean(torch.tensor(outputs, device=self.device))
+        metric = self.metric.compute()
+        self.log_metrics(metric, average_loss, suffix='val_', on_step=False, on_epoch=True)
+        return super().on_validation_epoch_end()
 
     def test_step(self, batch, batch_idx):
         outputs = self.forward_step(batch=batch)
