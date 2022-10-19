@@ -82,6 +82,8 @@ def load_model(model_class: pl.LightningModule, model_file, stage='test', **kwar
 
 def write_eval_performance(args: argparse.Namespace, eval_performance: Dict, out_file: Union[AnyStr, bytes, os.PathLike]):
     out_file = Path(out_file)
+    if not out_file.parent.exists():
+        out_file.parent.mkdir()
     json_data = dict()
     for key, value in args._get_kwargs():
         json_data[key] = [value]
