@@ -108,7 +108,7 @@ def get_trainer(args):
     callbacks = [get_model_earlystopping_callback(), get_model_best_checkpoint_callback()]
 
     if torch.cuda.is_available():
-        trainer = pl.Trainer(gpus=args.gpus, deterministic=True, max_epochs=args.max_epochs, callbacks=callbacks, distributed_backend='ddp')
+        trainer = pl.Trainer(gpus=args.gpus, deterministic=True, max_epochs=args.max_epochs, callbacks=callbacks)
         trainer.callbacks.append(get_lr_logger())
     else:
         trainer = pl.Trainer(max_epochs=args.max_epochs, callbacks=callbacks)
