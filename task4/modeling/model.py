@@ -110,6 +110,12 @@ class BaselineArgumentModel(ArgumentModel):
         self.metric.reset()
         return super().on_train_epoch_start()
 
+    def training_epoch_end(self, outputs):
+        average_loss = torch.mean(torch.tensor(outputs, device=self.device))
+        metric = self.metric.compute()
+        self.log_metrics(metric, average_loss, suffix='train_', on_step=False, on_epoch=True)
+        return super().training_epoch_end(outputs)
+
     def validation_step(self, batch, batch_idx):
         outputs = self.forward_step(batch=batch)
         self.log_metrics(outputs['metric'], outputs['loss'], suffix='val_', on_step=True, on_epoch=False)
