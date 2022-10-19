@@ -13,7 +13,6 @@ class ValueMetric(Metric):
 
     def __init__(self, id_to_type, rare_type) -> None:
         super().__init__()
-        self.event_ignore_index = 2
         self.id_to_type = id_to_type
         self.rare_type = set(rare_type)
         self.tp = collections.defaultdict(int)

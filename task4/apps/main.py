@@ -3,6 +3,7 @@
 # email: diqiuzhuanzhuan@gmail.com
 
 import argparse
+from ast import arg
 from pathlib import Path
 import pandas as pd
 import os, re
@@ -13,8 +14,9 @@ import pytorch_lightning as pl
 from task4.data_man.argument_reader import ArgumentDataModule
 from task4.modeling.model import ArgumentModel
 from task4.configuration.config import logging
+import torch
 from task4.configuration import config
-from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
 
 def parse_arguments():
 
@@ -26,6 +28,7 @@ def parse_arguments():
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
     parser.add_argument('--max_epochs', type=int, default=1, help='')
+    parser.add_argument('--gpus', type=int, default=1, help='')
     
     args = parser.parse_args()
 
@@ -81,26 +84,42 @@ def write_eval_performance(args: argparse.Namespace, eval_performance: Dict, out
     out_file = Path(out_file)
     json_data = dict()
     for key, value in args._get_kwargs():
-        json_data[key] = value
-    for key, value in eval_performance:
-        json_data [key] = value
+        json_data[key] = [value]
+    for key in eval_performance:
+        json_data[key] = [eval_performance[key]]
     json_data = pd.DataFrame(json_data)
     if out_file.exists():
         data = pd.read_csv(out_file)
-        json_data = pd.concat(data, json_data)
-    json_data.to_csv(out_file)
+        json_data = pd.concat([data, json_data])
+    json_data.to_csv(out_file, index=False)
     logging.info('Finished writing evaluation performance for {}'.format(out_file.as_posix()))
     
 def get_best_value(checkpoint_file: AnyStr, monitor: AnyStr='val_f1'):
     pattern = r'{}=(.*)-'.format(monitor)
     val = re.findall(pattern, checkpoint_file)[0]
     return float(val)
-    
+
+def get_lr_logger():
+    lr_monitor = LearningRateMonitor(logging_interval='step')
+    return lr_monitor
+
+def get_trainer(args):
+    pl.seed_everything(42)
+    callbacks = [get_model_earlystopping_callback(), get_model_best_checkpoint_callback()]
+
+    if torch.cuda.is_available():
+        trainer = pl.Trainer(gpus=args.gpus, deterministic=True, max_epochs=args.max_epochs, callbacks=callbacks, distributed_backend='ddp')
+        trainer.callbacks.append(get_lr_logger())
+    else:
+        trainer = pl.Trainer(max_epochs=args.max_epochs, callbacks=callbacks)
+
+    logging.info('Finished create a trainer.')
+    return trainer
+
 
 if __name__ == '__main__':
     args = parse_arguments()
-    callbacks = [get_model_earlystopping_callback(), get_model_best_checkpoint_callback()]
-    trainer = pl.Trainer(max_epochs=args.max_epochs, callbacks=callbacks)
+    trainer = get_trainer(args)
     adm = ArgumentDataModule.from_params(Params({
         'type': args.data_module_type,
         'reader': Params({
