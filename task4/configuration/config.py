@@ -25,6 +25,9 @@ train_file = {
 }
 
 
+performance_log = log_path/'performance.csv'
+
+
 ###### for log ######
 formatter = ColoredFormatter(
 	"%(log_color)s%(levelname)-8s%(reset)s %(blue)s%(message)s",

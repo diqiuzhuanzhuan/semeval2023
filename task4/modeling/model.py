@@ -14,7 +14,7 @@ from task4.metric.value_metric import ValueMetric
 from task4.data_man.meta_data import get_id_to_type
 
 
-class ArgumentModel(Registrable):
+class ArgumentModel(Registrable, pl.LightningModule):
     lr = 1e-5
     warmup_steps = 1000
 
@@ -47,15 +47,18 @@ class ArgumentModel(Registrable):
 
         return [optimizer], [scheduler]
 
-@ArgumentModel.register('baseline_argument_model') 
-class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
+    def forward_step(self, batch):
+        raise NotImplementedError()
 
+
+@ArgumentModel.register('baseline_argument_model') 
+class BaselineArgumentModel(ArgumentModel):
     
     def __init__(
         self, 
         encoder_model: AnyStr='bert-base-uncased',
         lr: float=1e-5,
-        value_types=20,
+        value_types: int=20,
         warmup_steps: int=1000,
         ) -> None:
         super().__init__()
@@ -65,6 +68,12 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
         self.lr = lr
         self.warmup_steps = warmup_steps
         self.metric = ValueMetric(id_to_type=get_id_to_type(), rare_type=[])
+        self.save_hyperparameters({
+            'encoder_model': encoder_model, 
+            'lr': lr, 
+            'value_types': value_types, 
+            'warmup_steps': warmup_steps
+            })
 
     def compute_loss(self, logits, targets):
         loss = torch.nn.BCEWithLogitsLoss()(logits, targets)

@@ -93,7 +93,7 @@ class BaselineArgumentDataModule(ArgumentDataModule):
             self.reader.read_data(config.train_file['arguments'], config.train_file['labels'])
 
         if stage == 'test':
-            pass
+            self.reader.read_data(config.train_file['arguments'], config.train_file['labels'])
             
         if stage == 'predict':
             pass
