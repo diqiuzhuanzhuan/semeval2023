@@ -15,32 +15,14 @@ from task4.data_man.meta_data import get_id_to_type
 
 
 class ArgumentModel(Registrable):
+    lr = 1e-5
+    warmup_steps = 1000
 
     def log_metrics(self, pred_results, loss=0.0, suffix='', on_step=False, on_epoch=True):
         for key in pred_results:
             self.log(suffix + key, pred_results[key], on_step=on_step, on_epoch=on_epoch, prog_bar=True, logger=True)
 
         self.log(suffix + 'loss', loss, on_step=on_step, on_epoch=on_epoch, prog_bar=True, logger=True)
-
-
-@ArgumentModel.register('baseline_argument_model') 
-class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
-
-    
-    def __init__(
-        self, 
-        encoder_model: AnyStr='bert-base-uncased',
-        lr: float=1e-5,
-        value_types=20,
-        warmup_steps: int=1000,
-        ) -> None:
-        super().__init__()
-        self.encoder = AutoModel.from_pretrained(encoder_model)
-        self.value_types = value_types
-        self.multi_label_weight = torch.nn.Linear(self.encoder.config.hidden_size, self.value_types)
-        self.lr = lr
-        self.warmup_steps = warmup_steps
-        self.metric = ValueMetric(id_to_type=get_id_to_type(), rare_type=[])
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.01)
@@ -65,6 +47,24 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
 
         return [optimizer], [scheduler]
 
+@ArgumentModel.register('baseline_argument_model') 
+class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
+
+    
+    def __init__(
+        self, 
+        encoder_model: AnyStr='bert-base-uncased',
+        lr: float=1e-5,
+        value_types=20,
+        warmup_steps: int=1000,
+        ) -> None:
+        super().__init__()
+        self.encoder = AutoModel.from_pretrained(encoder_model)
+        self.value_types = value_types
+        self.multi_label_weight = torch.nn.Linear(self.encoder.config.hidden_size, self.value_types)
+        self.lr = lr
+        self.warmup_steps = warmup_steps
+        self.metric = ValueMetric(id_to_type=get_id_to_type(), rare_type=[])
 
     def compute_loss(self, logits, targets):
         loss = torch.nn.BCEWithLogitsLoss()(logits, targets)
@@ -104,13 +104,13 @@ class BaselineArgumentModel(pl.LightningModule, ArgumentModel):
     def validation_step(self, batch, batch_idx):
         outputs = self.forward_step(batch=batch)
         self.log_metrics(outputs['metric'], outputs['loss'], suffix='val_', on_step=True, on_epoch=False)
-        return outputs
+        return outputs['loss']
 
     def on_validation_epoch_start(self) -> None:
         self.metric.reset()
         return super().on_validation_epoch_start()
-
-    def on_validation_epoch_end(self, outputs) -> None:
+    
+    def validation_epoch_end(self, outputs) -> None:
         average_loss = torch.mean(torch.tensor(outputs, device=self.device))
         metric = self.metric.compute()
         self.log_metrics(metric, average_loss, suffix='val_', on_step=False, on_epoch=True)
