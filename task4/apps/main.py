@@ -3,7 +3,6 @@
 # email: diqiuzhuanzhuan@gmail.com
 
 import argparse
-from ast import arg
 from pathlib import Path
 import pandas as pd
 import os, re
