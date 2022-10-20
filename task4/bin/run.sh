@@ -6,7 +6,6 @@ PYTHONPATH=$(dirname $(dirname $(pwd)}))
 export PYTHONPATH=$PYTHONPATH
 cd ".."
 echo "当前工作路径: $(pwd)"
-export PYTHONPATH="$PWD/..":$PYTHONPATH
 
 for encoder_model in  'bert-base-uncased' 'bert-large-uncased'
 do
