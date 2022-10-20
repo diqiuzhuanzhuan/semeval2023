@@ -104,14 +104,14 @@ class BaselineArgumentModel(ArgumentModel):
     def training_step(self, batch, batch_idx):
         outputs = self.forward_step(batch=batch)
         self.log_metrics(outputs['metric'], outputs['loss'], suffix='train_', on_step=True, on_epoch=False)
-        return outputs['loss']
+        return {'loss': outputs['loss']}
 
     def on_train_epoch_start(self) -> None:
         self.metric.reset()
         return super().on_train_epoch_start()
 
     def training_epoch_end(self, outputs):
-        average_loss = torch.mean(torch.tensor(outputs, device=self.device))
+        average_loss = torch.mean(torch.tensor([item['loss'] for item in outputs], device=self.device))
         metric = self.metric.compute()
         self.log_metrics(metric, average_loss, suffix='train_', on_step=False, on_epoch=True)
         return super().training_epoch_end(outputs)
@@ -119,14 +119,14 @@ class BaselineArgumentModel(ArgumentModel):
     def validation_step(self, batch, batch_idx):
         outputs = self.forward_step(batch=batch)
         self.log_metrics(outputs['metric'], outputs['loss'], suffix='val_', on_step=True, on_epoch=False)
-        return outputs['loss']
+        return {'loss': outputs['loss']}
 
     def on_validation_epoch_start(self) -> None:
         self.metric.reset()
         return super().on_validation_epoch_start()
     
     def validation_epoch_end(self, outputs) -> None:
-        average_loss = torch.mean(torch.tensor(outputs, device=self.device))
+        average_loss = torch.mean(torch.tensor([item['loss'] for item in outputs], device=self.device))
         metric = self.metric.compute()
         self.log_metrics(metric, average_loss, suffix='val_', on_step=False, on_epoch=True)
         return super().on_validation_epoch_end()
