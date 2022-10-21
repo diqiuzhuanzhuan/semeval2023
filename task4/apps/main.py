@@ -62,7 +62,7 @@ def save_model(trainer: pl.Trainer, default_root_dir=".", model_name='', timesta
         timestamp = time.time()
     os.makedirs(out_dir, exist_ok=True)
 
-    outfile = out_dir + '/' + model_name + '_timestamp_' + str(timestamp) + '_final.ckpt'
+    outfile = os.path.join(out_dir, + model_name + '_timestamp_' + str(timestamp) + '_final.ckpt')
     trainer.save_checkpoint(outfile, weights_only=True)
 
     logging.info('Stored model {}.'.format(outfile))
