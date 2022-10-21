@@ -118,8 +118,14 @@ def get_trainer(args):
     return trainer
 
 
+def show_args(args):
+    logging.info('run with these args:')
+    log_info = "\n" + "\n".join(['{}: {}'.format(k, v) for k, v in args._get_kwargs()])
+    logging.info(log_info)
+
 if __name__ == '__main__':
     args = parse_arguments()
+    show_args(args)
     trainer = get_trainer(args)
     adm = ArgumentDataModule.from_params(Params({
         'type': args.data_module_type,
