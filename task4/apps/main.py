@@ -62,7 +62,7 @@ def save_model(trainer: pl.Trainer, default_root_dir=".", model_name='', timesta
         timestamp = time.time()
     os.makedirs(out_dir, exist_ok=True)
 
-    outfile = os.path.join(out_dir, + model_name + '_timestamp_' + str(timestamp) + '_final.ckpt')
+    outfile = os.path.join(out_dir, model_name + '_timestamp_' + str(timestamp) + '_final.ckpt')
     trainer.save_checkpoint(outfile, weights_only=True)
 
     logging.info('Stored model {}.'.format(outfile))
@@ -109,7 +109,7 @@ def get_trainer(args):
     callbacks = [get_model_earlystopping_callback(), get_model_best_checkpoint_callback()]
 
     if torch.cuda.is_available():
-        trainer = pl.Trainer(accelerator='gpu', devices=args.gpus, deterministic=True, max_epochs=args.max_epochs, callbacks=callbacks)
+        trainer = pl.Trainer(accelerator='gpu', devices=args.gpus, max_epochs=args.max_epochs, callbacks=callbacks)
         trainer.callbacks.append(get_lr_logger())
     else:
         trainer = pl.Trainer(max_epochs=args.max_epochs, callbacks=callbacks)
@@ -142,6 +142,7 @@ if __name__ == '__main__':
     argument_model = ArgumentModel.from_params(params=params)
     trainer.fit(model=argument_model, datamodule=adm)
     _, best_checkpoint = save_model(trainer, model_name=args.model_type)
+    logging.info('get best_checkpoint file: {}'.format(best_checkpoint))
     val_f1 = get_best_value(best_checkpoint, monitor='val_f1')
     write_eval_performance(args, {'val_f1': val_f1}, config.performance_log)
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
