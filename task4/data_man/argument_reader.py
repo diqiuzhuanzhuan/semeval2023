@@ -90,10 +90,10 @@ class BaselineArgumentDataModule(ArgumentDataModule):
         if stage == 'fit':
             self.reader.read_data(config.train_file['arguments'], config.train_file['labels'])
         if stage == 'validate':
-            self.reader.read_data(config.validate_file['arguments'], config.train_file['labels'])
+            self.reader.read_data(config.validate_file['arguments'], config.validate_file['labels'])
 
         if stage == 'test':
-            self.reader.read_data(config.testt_file['arguments'], config.train_file['labels'])
+            self.reader.read_data(config.testt_file['arguments'], config.test_file['labels'])
             
         if stage == 'predict':
             pass
