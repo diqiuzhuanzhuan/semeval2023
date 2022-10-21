@@ -15,7 +15,8 @@ log_path = root_path/'logs'
 output_path = root_path/'output'
 
 train_data_path = data_path/'training_data'
-
+validate_data_path = data_path/'validate_data'
+test_data_path = data_path/'test_data'
 
 
 train_file = {
@@ -24,6 +25,18 @@ train_file = {
     'level1-labels': train_data_path/'level1-labels-training.tsv'
 }
 
+
+validate_file = {
+    'arguments': validate_data_path/'arguments-training.tsv',
+    'labels': validate_data_path/'labels-training.tsv',
+    'level1-labels': validate_data_path/'level1-labels-training.tsv'
+}
+
+test_file = {
+    'arguments': test_data_path/'arguments-training.tsv',
+    'labels': test_data_path/'labels-training.tsv',
+    'level1-labels': test_data_path/'level1-labels-training.tsv'
+}
 
 performance_log = log_path/'performance.csv'
 
