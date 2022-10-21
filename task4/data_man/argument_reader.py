@@ -93,7 +93,7 @@ class BaselineArgumentDataModule(ArgumentDataModule):
             self.reader.read_data(config.validate_file['arguments'], config.validate_file['labels'])
 
         if stage == 'test':
-            self.reader.read_data(config.testt_file['arguments'], config.test_file['labels'])
+            self.reader.read_data(config.test_file['arguments'], config.test_file['labels'])
             
         if stage == 'predict':
             pass
