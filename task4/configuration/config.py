@@ -27,9 +27,9 @@ train_file = {
 
 
 validate_file = {
-    'arguments': validate_data_path/'arguments-training.tsv',
-    'labels': validate_data_path/'labels-training.tsv',
-    'level1-labels': validate_data_path/'level1-labels-training.tsv'
+    'arguments': validate_data_path/'arguments-validate.tsv',
+    'labels': validate_data_path/'labels-validate.tsv',
+    'level1-labels': validate_data_path/'level1-labels-validate.tsv'
 }
 
 test_file = {
