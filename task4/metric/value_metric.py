@@ -38,7 +38,7 @@ class ValueMetric(Metric):
                 else:
                     self.tn[self.id_to_type[i]] += 1
             else: 
-                if preds[i] == 1:
+                if target[i] == 1:
                     self.fn[self.id_to_type[i]] += 1
                 else:
                     self.fp[self.id_to_type[i]] += 1
