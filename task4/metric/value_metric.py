@@ -44,7 +44,8 @@ class ValueMetric(Metric):
                     self.fp[self.id_to_type[i]] += 1
 
     def compute(self):
-        total_f1 = 0.0
+        total_f1, acc = 0.0, 0.0
+        total_number, acc_number = 0, 0
         for i in range(len(self.id_to_type)):
             type_string = self.id_to_type[i]
             p_support = self.tp[type_string] + self.fp[type_string]
@@ -62,8 +63,13 @@ class ValueMetric(Metric):
             else:
                 f1 = (2 * precision * recall)/(precision + recall)
             total_f1 += f1 / len(self.id_to_type)
+            total_number += (self.tp[type_string] + self.fp[type_string] + self.tn[type_string] + self.fn[type_string])
+            acc_number += self.tp[type_string] + self.tn[type_string]
+        if total_number > 0:
+            acc = acc_number / total_number
         score = {
-            'f1': total_f1
+            'f1': total_f1,
+            'acc': acc
         }
         return score
         
