@@ -104,24 +104,23 @@ class BaselineArgumentDataModule(ArgumentDataModule):
     def collate_batch(self, batch):
         batch_size = len(batch)
         batch_ = list(zip(*batch))
-        argument_id, input_ids_batch, _, _, label_ids_batch = batch_
-        max_len = max([len(_) for _ in input_ids_batch])
+        argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch_
+        max_len = max([len(_) for _ in input_ids])
         input_ids_tensor = torch.empty(size=[batch_size, max_len], dtype=torch.long).fill_(0)
         token_type_ids_tensor = torch.empty(size=[batch_size, max_len], dtype=torch.long).fill_(0)
         attention_mask_tensor = torch.empty(size=[batch_size, max_len], dtype=torch.long).fill_(0)
-        if label_ids_batch:
-            max_label_len = max([len(_) for _ in label_ids_batch])
+        if label_ids:
+            max_label_len = max([len(_) for _ in label_ids])
             label_ids_tensor = torch.empty(size=[batch_size, max_label_len], dtype=torch.float).fill_(0)
         else:
             label_ids_tensor = None
         for i in range(batch_size):
-            _, input_ids, token_type_ids, attention_mask, label_ids = batch[i]
-            available_length = len(input_ids)
-            input_ids_tensor[i][0:available_length] = torch.tensor(input_ids, dtype=torch.long)
-            token_type_ids_tensor[i][0:available_length] = torch.tensor(token_type_ids, dtype=torch.long)
-            attention_mask_tensor[i][0:available_length] = torch.tensor(attention_mask, dtype=torch.long)
+            available_length = len(input_ids[i])
+            input_ids_tensor[i][0:available_length] = torch.tensor(input_ids[i], dtype=torch.long)
+            token_type_ids_tensor[i][0:available_length] = torch.tensor(token_type_ids[i], dtype=torch.long)
+            attention_mask_tensor[i][0:available_length] = torch.tensor(attention_mask[i], dtype=torch.long)
             if label_ids_tensor is not None:
-                label_ids_tensor[i] = torch.tensor(label_ids, dtype=torch.float)
+                label_ids_tensor[i] = torch.tensor(label_ids[i], dtype=torch.float)
 
         return argument_id, input_ids_tensor, token_type_ids_tensor, attention_mask_tensor, label_ids_tensor
 
