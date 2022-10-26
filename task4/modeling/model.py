@@ -14,6 +14,15 @@ from task4.metric.value_metric import ValueMetric
 from task4.data_man.meta_data import get_id_to_type
 
 
+def fn(warmup_steps, step):
+    if step < warmup_steps:
+        return float(step) / float(max(1, warmup_steps))
+    else:
+        return 1.0
+
+def linear_warmup_decay(warmup_steps):
+    return functools.partial(fn, warmup_steps)
+
 class ArgumentModel(Registrable, pl.LightningModule):
     lr = 1e-5
     warmup_steps = 1000
@@ -27,14 +36,6 @@ class ArgumentModel(Registrable, pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=0.01)
         warmup_steps = self.warmup_steps
-        def fn(warmup_steps, step):
-            if step < warmup_steps:
-                return float(step) / float(max(1, warmup_steps))
-            else:
-                return 1.0
-
-        def linear_warmup_decay(warmup_steps):
-            return functools.partial(fn, warmup_steps)
 
         scheduler = {
             "scheduler": torch.optim.lr_scheduler.LambdaLR(

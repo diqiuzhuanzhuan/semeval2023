@@ -125,16 +125,16 @@ class BaselineArgumentDataModule(ArgumentDataModule):
         return argument_id, input_ids_tensor, token_type_ids_tensor, attention_mask_tensor, label_ids_tensor
 
     def train_dataloader(self):
-        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch, shuffle=True)
+        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch, shuffle=True, num_workers=8)
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch)
+        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch)
+        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
     
     def predict_dataloader(self):
-        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch)
+        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
 
 
 if __name__ == "__main__":
