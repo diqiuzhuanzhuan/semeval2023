@@ -3,6 +3,7 @@
 # email: diqiuzhuanzhuan@gmail.com
 
 
+from copy import deepcopy
 import pytorch_lightning as pl
 from typing import AnyStr, List, Optional, Any, Tuple, Union
 import torch
@@ -88,13 +89,12 @@ class BaselineArgumentDataModule(ArgumentDataModule):
         
     def setup(self, stage: Optional[str] = None) -> None:
         if stage == 'fit':
-            self.reader.read_data(config.train_file['arguments'], config.train_file['labels'])
+            pass
         if stage == 'validate':
-            self.reader.read_data(config.validate_file['arguments'], config.validate_file['labels'])
+            pass
 
         if stage == 'test':
-            self.reader.read_data(config.test_file['arguments'], config.test_file['labels'])
-            
+            pass 
         if stage == 'predict':
             pass
 
@@ -126,14 +126,18 @@ class BaselineArgumentDataModule(ArgumentDataModule):
 
     def train_dataloader(self):
         self.reader.read_data(config.train_file['arguments'], config.train_file['labels'])
-        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch, shuffle=True, num_workers=8)
+        train_reader = deepcopy(self.reader)
+        return torch.utils.data.DataLoader(train_reader, batch_size=self.batch_size, collate_fn=self.collate_batch, shuffle=True, num_workers=8)
 
     def val_dataloader(self):
         self.reader.read_data(config.validate_file['arguments'], config.validate_file['labels'])
-        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
+        val_reader = deepcopy(self.reader)
+        return torch.utils.data.DataLoader(val_reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
 
     def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
+        self.reader.read_data(config.test_file['arguments'], config.test_file['labels'])
+        test_reader = deepcopy(self.reader)
+        return torch.utils.data.DataLoader(test_reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
     
     def predict_dataloader(self):
         return torch.utils.data.DataLoader(self.reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
@@ -158,6 +162,14 @@ if __name__ == "__main__":
         'batch_size': 2
     }))
     adm.setup(stage='fit')
-    for batch in adm.train_dataloader():
+    t_train = adm.train_dataloader()
+    t_val = adm.val_dataloader()
+    for batch in t_train:
+        print(batch)
+        break
+    for batch in t_val:
+        print(batch)
+        break
+    for batch in t_train:
         print(batch)
         break
