@@ -34,9 +34,9 @@ validate_file = {
 }
 
 test_file = {
-    'arguments': test_data_path/'arguments-training.tsv',
-    'labels': test_data_path/'labels-training.tsv',
-    'level1-labels': test_data_path/'level1-labels-training.tsv'
+    'arguments': test_data_path/'arguments-validate.tsv',
+    'labels': test_data_path/'labels-validate.tsv',
+    'level1-labels': test_data_path/'level1-labels-validate.tsv'
 }
 
 performance_log = log_path/'performance.csv'
