@@ -131,7 +131,7 @@ if __name__ == '__main__':
         'type': args.data_module_type,
         'reader': Params({
             'type': args.dataset_type,
-            'encoder_model': args.encoder_mpodel
+            'encoder_model': args.encoder_model
         }),
         'batch_size': args.batch_size
     }))
