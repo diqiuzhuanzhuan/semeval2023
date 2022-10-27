@@ -26,8 +26,8 @@ def parse_arguments():
     parser.add_argument('--model_type', type=str, default='baseline_argument_model', help='')
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
-    parser.add_argument('--max_epochs', type=int, default=1, help='')
-    parser.add_argument('--gpus', type=int, default=1, help='')
+    parser.add_argument('--max_epochs', type=int, default=5, help='')
+    parser.add_argument('--gpus', type=int, default=-1, help='')
     
     args = parser.parse_args()
 
@@ -130,7 +130,8 @@ if __name__ == '__main__':
     adm = ArgumentDataModule.from_params(Params({
         'type': args.data_module_type,
         'reader': Params({
-            'type': args.dataset_type
+            'type': args.dataset_type,
+            'encoder_model': args.encoder_mpodel
         }),
         'batch_size': args.batch_size
     }))
