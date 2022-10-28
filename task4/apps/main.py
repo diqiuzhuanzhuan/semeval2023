@@ -5,7 +5,7 @@
 import argparse
 from pathlib import Path
 import pandas as pd
-import os, re
+import os, re, sys
 import time
 from typing import AnyStr, Dict, Union
 from allennlp.common.params import Params
@@ -27,6 +27,7 @@ def parse_arguments():
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
     parser.add_argument('--max_epochs', type=int, default=5, help='')
+    parser.add_argument('--monitors', type=str, default="val_f1", help='a series of metrics using space as delimiter')
     parser.add_argument('--gpus', type=int, default=-1, help='')
     
     args = parser.parse_args()
@@ -149,5 +150,6 @@ if __name__ == '__main__':
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
     trainer.test(argument_model, datamodule=adm)
     
+    sys.exit(0)    
 
     
