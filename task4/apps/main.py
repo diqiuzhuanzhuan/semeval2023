@@ -7,7 +7,8 @@ from pathlib import Path
 import pandas as pd
 import os, re, sys
 import time
-from typing import AnyStr, Dict, Union
+from tqdm import tqdm
+from typing import AnyStr, Dict, List, Union
 from allennlp.common.params import Params
 import pytorch_lightning as pl
 from task4.data_man.argument_reader import ArgumentDataModule
@@ -26,7 +27,7 @@ def parse_arguments():
     parser.add_argument('--model_type', type=str, default='baseline_argument_model', help='')
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
-    parser.add_argument('--max_epochs', type=int, default=5, help='')
+    parser.add_argument('--max_epochs', type=int, default=1, help='')
     parser.add_argument('--monitors', type=str, default="val_f1", help='a series of metrics using space as delimiter')
     parser.add_argument('--gpus', type=int, default=-1, help='')
     
@@ -95,6 +96,28 @@ def write_eval_performance(args: argparse.Namespace, eval_performance: Dict, out
         json_data = pd.concat([data, json_data])
     json_data.to_csv(out_file, index=False)
     logging.info('Finished writing evaluation performance for {}'.format(out_file.as_posix()))
+
+def write_test_results(test_results: List, out_file: Union[AnyStr, bytes, os.PathLike]):
+    out_file = Path(out_file)
+    if not out_file.parent.exists():
+        out_file.parent.mkdir(parents=True)
+    with open(str(out_file), 'w') as f:
+        for id, item in test_results:
+            f.write(id+"\t")
+            [f.write(str(int(field))+"\t") for field in item]
+            f.write("\n")
+        
+def test_model(model: ArgumentModel, data_module: pl.LightningDataModule):
+    test_results = []
+    test_dataloader = data_module.test_dataloader()
+    for batch in tqdm(test_dataloader, total=test_dataloader.__len__()):
+        argument_id, batch_result = model.predict_tags(batch=batch)
+        test_results.extend((argument_id, batch_result))
+    return test_results
+
+def generate_result_file_parent(args):
+    names = ["{}={}".format(k, v) for k, v in args._get_kwargs()]
+    return "_".join(names)
     
 def get_best_value(checkpoint_file: AnyStr, monitor: AnyStr='val_f1'):
     pattern = r'{}=(.*)-'.format(monitor)
@@ -145,9 +168,14 @@ if __name__ == '__main__':
     trainer.fit(model=argument_model, datamodule=adm)
     _, best_checkpoint = save_model(trainer, model_name=args.model_type)
     logging.info('get best_checkpoint file: {}'.format(best_checkpoint))
-    val_f1 = get_best_value(best_checkpoint, monitor='val_f1')
-    write_eval_performance(args, {'val_f1': val_f1}, config.performance_log)
+    monitors = args.monitors.split(' ')
+    value_by_monitor = {monitor: get_best_value(best_checkpoint, monitor=monitor) for monitor in monitors}
+    write_eval_performance(args, value_by_monitor, config.performance_log)
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
+    test_results = test_model(argument_model, adm)
+    out_file = config.output_path/generate_result_file_parent(args)/value_by_monitor[monitors[0]]+".tsv"
+    write_test_results(test_results=test_results, out_file=out_file)
+
     trainer.test(argument_model, datamodule=adm)
     
     sys.exit(0)    

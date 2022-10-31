@@ -138,7 +138,12 @@ class BaselineArgumentModel(ArgumentModel):
     
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
         outputs = self.forward_step(batch=batch)
-        return outputs
+        return outputs['predict']
+
+    def predict_tags(self, batch: Any) -> Any:
+        argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch
+        outputs = self.forward_step(batch=batch)
+        return argument_id, outputs['predict'].numpy().tolist()
 
 
 if __name__ == '__main__':

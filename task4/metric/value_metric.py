@@ -46,31 +46,31 @@ class ValueMetric(Metric):
     def compute(self):
         total_f1, acc = 0.0, 0.0
         total_number, acc_number = 0, 0
+        score = dict()
         for i in range(len(self.id_to_type)):
             type_string = self.id_to_type[i]
             p_support = self.tp[type_string] + self.fp[type_string]
             if p_support == 0:
-                precision = 0
+                precision = 0.0
             else:
                 precision = self.tp[type_string] / p_support
             r_support = self.tp[type_string] + self.fn[type_string]
             if r_support == 0:
-                recall = 0
+                recall = 0.0
             else:
                 recall = self.tp[type_string] / r_support
             if precision * recall == 0:
                 f1 = precision * recall
             else:
                 f1 = (2 * precision * recall)/(precision + recall)
+            score[type_string+'@f1'] = f1
             total_f1 += f1 / len(self.id_to_type)
             total_number += (self.tp[type_string] + self.fp[type_string] + self.tn[type_string] + self.fn[type_string])
             acc_number += self.tp[type_string] + self.tn[type_string]
         if total_number > 0:
             acc = acc_number / total_number
-        score = {
-            'f1': total_f1,
-            'acc': acc
-        }
+        score['f1'] = total_f1
+        score['acc'] = acc
         return score
         
     
