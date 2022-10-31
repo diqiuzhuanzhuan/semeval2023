@@ -115,9 +115,10 @@ def test_model(model: ArgumentModel, data_module: pl.LightningDataModule):
         test_results.extend((argument_id, batch_result))
     return test_results
 
-def generate_result_file_parent(args):
-    names = ["{}={}".format(k, v) for k, v in args._get_kwargs()]
-    return "_".join(names)
+def generate_result_file_parent(args: argparse.Namespace, value_by_monitor: Dict):
+    parent_name = "_".join(["{}={}".format(k, v) for k, v in args._get_kwargs()])
+    name = "_".join(["{}={}".format(k, str(value_by_monitor[k])) for k in value_by_monitor])
+    return parent_name, name
     
 def get_best_value(checkpoint_file: AnyStr, monitor: AnyStr='val_f1'):
     pattern = r'{}=(.*)-'.format(monitor)
@@ -173,7 +174,8 @@ if __name__ == '__main__':
     write_eval_performance(args, value_by_monitor, config.performance_log)
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
     test_results = test_model(argument_model, adm)
-    out_file = config.output_path/generate_result_file_parent(args)/value_by_monitor[monitors[0]]+".tsv"
+    parent, file = generate_result_file_parent(args, value_by_monitor)
+    out_file = config.output_path/parent/file+".tsv"
     write_test_results(test_results=test_results, out_file=out_file)
 
     trainer.test(argument_model, datamodule=adm)

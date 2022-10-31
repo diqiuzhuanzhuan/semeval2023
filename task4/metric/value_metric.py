@@ -24,7 +24,7 @@ class ValueMetric(Metric):
     def update(self, preds: List[List], target: List[List]):
         if isinstance(preds, torch.Tensor):
             preds = preds.cpu().numpy().tolist()
-        if isinstance(target,torch.Tensor):
+        if isinstance(target, torch.Tensor):
             target = target.cpu().numpy().tolist()
         for p, t in zip(preds, target):
             self._update(preds=p, target=t)
