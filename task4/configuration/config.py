@@ -19,6 +19,7 @@ validate_data_path = data_path/'validate_data'
 test_data_path = data_path/'test_data'
 test_data_path = validate_data_path # wait for the time when testdata is released
 
+value_category_file = train_data_path/'value-categories.json'
 
 train_file = {
     'arguments': train_data_path/'arguments-training.tsv',
