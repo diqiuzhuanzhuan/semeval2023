@@ -145,7 +145,22 @@ class BaselineArgumentModel(ArgumentModel):
         outputs = self.forward_step(batch=batch)
         return argument_id, outputs['predict'].numpy().tolist()
 
+@ArgumentModel.register('class_balanced_loss_argument_model') 
+class ClassBalancedLossArgumentModel(BaselineArgumentModel):
 
+    def __init__(
+        self, 
+        encoder_model: AnyStr = 'bert-base-uncased', 
+        lr: float = 0.00001, 
+        value_types: int = 20, 
+        warmup_steps: int = 1000
+        ) -> None:
+        super().__init__(encoder_model, lr, value_types, warmup_steps)
+
+    def compute_loss(self, logits, targets):
+        return super().compute_loss(logits, targets)
+
+    
 if __name__ == '__main__':
     params = Params({
         'type': 'baseline_argument_model',
