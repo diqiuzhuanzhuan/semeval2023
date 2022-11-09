@@ -10,8 +10,11 @@ from typing import AnyStr, Any, Union, Optional
 from transformers import AutoModel
 import torch
 import functools
+from task4.configuration import config
 from task4.metric.value_metric import ValueMetric
 from task4.data_man.meta_data import get_id_to_type
+from task4.modeling.some_loss import ResampleLoss
+
 
 
 def fn(warmup_steps, step):
@@ -144,6 +147,29 @@ class BaselineArgumentModel(ArgumentModel):
         argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch
         outputs = self.forward_step(batch=batch)
         return argument_id, outputs['predict'].numpy().tolist()
+
+
+@ArgumentModel.register('focal_loss_argument_model') 
+class FocalLossArgumentModel(BaselineArgumentModel):
+
+    def __init__(
+        self, 
+        encoder_model: AnyStr = 'bert-base-uncased', 
+        lr: float = 0.00001, 
+        value_types: int = 20, 
+        warmup_steps: int = 1000
+        ) -> None:
+        super().__init__(encoder_model, lr, value_types, warmup_steps)
+
+    def compute_loss(self, logits, targets):
+        loss_func = ResampleLoss(reweight_func=None, 
+                            loss_weight=1.0,
+                            focal=dict(focal=True, alpha=0.5, gamma=2),
+                            logit_reg=dict(),
+                            class_freq=config.label_freq, 
+                            train_num=config.train_num)
+        loss = loss_func(logits, targets)
+        return loss
 
 @ArgumentModel.register('class_balanced_loss_argument_model') 
 class ClassBalancedLossArgumentModel(BaselineArgumentModel):

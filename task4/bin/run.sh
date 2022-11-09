@@ -13,7 +13,7 @@ do
     do
         for batch_size in 16
         do
-            for model_type in 'baseline_argument_model'
+            for model_type in 'baseline_argument_model' 'focal_loss_argument_model'
             do
                 for dataset_type in 'baseline_argument_dataset'
                 do
