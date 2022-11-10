@@ -195,6 +195,31 @@ class ClassBalancedLossArgumentModel(BaselineArgumentModel):
         loss = loss_func(logits, targets)
         return loss
 
+@ArgumentModel.register('rbce_focal_loss_argument_model')        
+class RbceFocalLossArgumentModel(BaselineArgumentModel):
+
+    def __init__(
+        self, 
+        encoder_model: AnyStr = 'bert-base-uncased', 
+        lr: float = 0.00001, 
+        value_types: int = 20, 
+        warmup_steps: int = 1000
+        ) -> None:
+        super().__init__(encoder_model, lr, value_types, warmup_steps)
+
+    def compute_loss(self, logits, targets):
+        loss_func = ResampleLoss(
+            reweight_func='rebalance', 
+            loss_weight=1.0, 
+            focal=dict(focal=True, alpha=0.5, gamma=2),
+            logit_reg=dict(),
+            map_param=dict(alpha=0.1, beta=10.0, gamma=0.9), 
+            class_freq=config.label_freq, 
+            train_num=config.train_num
+            )
+        loss = loss_func(logits, targets)
+        return loss
+
     
 if __name__ == '__main__':
     params = Params({

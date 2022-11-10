@@ -250,10 +250,10 @@ def binary_cross_entropy(
 
     # weighted element-wise losses
     if weight is not None:
-        weight = weight.float()
+        weight = weight.float().to(pred.device)
 
     loss = F.binary_cross_entropy_with_logits(
-        pred, label.float(), weight, reduction='none')
+        pred, label, weight, reduction='none')
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
 
     return loss
