@@ -214,7 +214,7 @@ class RbceFocalLossArgumentModel(BaselineArgumentModel):
             focal=dict(focal=True, alpha=0.5, gamma=2),
             logit_reg=dict(),
             map_param=dict(alpha=0.1, beta=10.0, gamma=0.9), 
-            class_freq=config.label_freq, 
+            class_freq=torch.from_numpy(config.label_freq).to(self.device), 
             train_num=config.train_num
             )
         loss = loss_func(logits, targets)

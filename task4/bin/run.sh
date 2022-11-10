@@ -9,7 +9,7 @@ echo "当前工作路径: $(pwd)"
 
 for encoder_model in  'bert-base-uncased' 'bert-large-uncased'
 do
-    for max_epochs in 20
+    for max_epochs in 35
     do
         for batch_size in 16
         do
