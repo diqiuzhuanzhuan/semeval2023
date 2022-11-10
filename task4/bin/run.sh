@@ -26,7 +26,7 @@ do
                         --model_type $model_type \
                         --dataset_type $dataset_type \
                         --data_module_type $data_module_type \
-                        --gpus 1
+                        --gpus -1
                     done
                 done
             done            
