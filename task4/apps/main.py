@@ -24,7 +24,7 @@ def parse_arguments():
 
     parser.add_argument('--data_module_type', type=str, default='baseline_argument_data_module',help='')
     parser.add_argument('--dataset_type', type=str, default='baseline_argument_dataset', help='')
-    parser.add_argument('--model_type', type=str, default='baseline_argument_model', help='')
+    parser.add_argument('--model_type', type=str, default='class_balanced_loss_argument_model', help='')
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
     parser.add_argument('--max_epochs', type=int, default=1, help='')

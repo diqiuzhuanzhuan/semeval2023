@@ -184,7 +184,16 @@ class ClassBalancedLossArgumentModel(BaselineArgumentModel):
         super().__init__(encoder_model, lr, value_types, warmup_steps)
 
     def compute_loss(self, logits, targets):
-        return super().compute_loss(logits, targets)
+        loss_func = ResampleLoss(
+            reweight_func='CB', 
+            loss_weight=10.0,
+            focal=dict(focal=True, alpha=0.5, gamma=2),
+            logit_reg=dict(),
+            CB_loss=dict(CB_beta=0.9, CB_mode='by_class'),
+            class_freq=config.label_freq, 
+            train_num=config.train_num) 
+        loss = loss_func(logits, targets)
+        return loss
 
     
 if __name__ == '__main__':
