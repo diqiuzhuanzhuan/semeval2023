@@ -214,13 +214,77 @@ class RbceFocalLossArgumentModel(BaselineArgumentModel):
             focal=dict(focal=True, alpha=0.5, gamma=2),
             logit_reg=dict(),
             map_param=dict(alpha=0.1, beta=10.0, gamma=0.9), 
-            class_freq=torch.from_numpy(config.label_freq).to(self.device), 
+            class_freq=config.label_freq, 
             train_num=config.train_num
             )
         loss = loss_func(logits, targets)
         return loss
 
-    
+
+@ArgumentModel.register('ntr_focal_loss_argument_model') 
+class NtrFocalLossArgumentModel(BaselineArgumentModel):
+
+    def compute_loss(self, logits, targets):
+        loss_func = ResampleLoss(
+            reweight_func=None, 
+            loss_weight=1.0,
+            focal=dict(focal=True, alpha=0.5, gamma=2),
+            logit_reg=dict(init_bias=0.05, neg_scale=2.0),
+            class_freq=config.label_freq,
+            train_num=config.train_num
+            )
+        loss = loss_func(logits, targets)
+        return loss
+
+@ArgumentModel.register('db_no_focal_loss_argument_model')
+class DbNoFocalLossArgumentModel(BaselineArgumentModel):
+
+    def compute_loss(self, logits, targets):
+        loss_func = ResampleLoss(
+            reweight_func='rebalance', 
+            loss_weight=0.5,
+            focal=dict(focal=False, alpha=0.5, gamma=2),
+            logit_reg=dict(init_bias=0.05, neg_scale=2.0),
+            map_param=dict(alpha=0.1, beta=10.0, gamma=0.9), 
+            class_freq=config.label_freq,
+            train_num=config.train_num
+            )
+        loss = loss_func(logits, targets)
+        return loss
+
+@ArgumentModel.register('class_balanced_ntr_loss_argument_model')
+class ClassBalancedNtrLossArgumentModel(BaselineArgumentModel):
+
+    def compute_loss(self, logits, targets):
+        loss_func = ResampleLoss(
+            reweight_func='CB', 
+            loss_weight=10.0,
+            focal=dict(focal=True, alpha=0.5, gamma=2),
+            logit_reg=dict(init_bias=0.05, neg_scale=2.0),
+            CB_loss=dict(CB_beta=0.9, CB_mode='by_class'),
+            class_freq=config.label_freq,
+            train_num=config.train_num
+            )
+        loss = loss_func(logits, targets)
+        return loss
+
+@ArgumentModel.register('distribution_balanced_loss_argument_model')
+class DistributionBalancedLossArgumentModel(BaselineArgumentModel):
+
+    def compute_loss(self, logits, targets):
+        loss_func = ResampleLoss(
+            reweight_func='rebalance', 
+            loss_weight=1.0,
+            focal=dict(focal=True, alpha=0.5, gamma=2),
+            logit_reg=dict(init_bias=0.05, neg_scale=2.0),
+            map_param=dict(alpha=0.1, beta=10.0, gamma=0.9), 
+            class_freq=config.label_freq,
+            train_num=config.train_num
+            )
+        loss = loss_func(logits, targets)
+        return loss
+
+
 if __name__ == '__main__':
     params = Params({
         'type': 'baseline_argument_model',

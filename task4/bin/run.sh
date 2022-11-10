@@ -13,7 +13,9 @@ do
     do
         for batch_size in 16
         do
-            for model_type in 'rbce_focal_loss_argument_model' 'baseline_argument_model' 'focal_loss_argument_model' 'class_balanced_loss_argument_model'
+            for model_type in 'ntr_focal_loss_argument_model' 'db_no_focal_loss_argument_model' 'class_balanced_ntr_loss_argument_model' \
+                              'distribution_balanced_loss_argument_model' 'rbce_focal_loss_argument_model' 'baseline_argument_model' \
+                              'focal_loss_argument_model' 'class_balanced_loss_argument_model'
             do
                 for dataset_type in 'baseline_argument_dataset'
                 do
