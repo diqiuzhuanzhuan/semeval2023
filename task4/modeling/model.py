@@ -162,12 +162,16 @@ class FocalLossArgumentModel(BaselineArgumentModel):
         super().__init__(encoder_model, lr, value_types, warmup_steps)
 
     def compute_loss(self, logits, targets):
-        loss_func = ResampleLoss(reweight_func=None, 
-                            loss_weight=1.0,
-                            focal=dict(focal=True, alpha=0.5, gamma=2),
-                            logit_reg=dict(),
-                            class_freq=config.label_freq, 
-                            train_num=config.train_num)
+        class_freq = torch.tensor(config.label_freq, device=self.device)
+        train_num = torch.tensor(config.train_num, device=self.device)
+        loss_func = ResampleLoss(
+            reweight_func=None, 
+            loss_weight=1.0,
+            focal=dict(focal=True, alpha=0.5, gamma=2),
+            logit_reg=dict(),
+            class_freq=class_freq, 
+            train_num=train_num
+            )
         loss = loss_func(logits, targets)
         return loss
 
@@ -184,14 +188,16 @@ class ClassBalancedLossArgumentModel(BaselineArgumentModel):
         super().__init__(encoder_model, lr, value_types, warmup_steps)
 
     def compute_loss(self, logits, targets):
+        class_freq = torch.tensor(config.label_freq, device=self.device)
+        train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func='CB', 
             loss_weight=10.0,
             focal=dict(focal=True, alpha=0.5, gamma=2),
             logit_reg=dict(),
             CB_loss=dict(CB_beta=0.9, CB_mode='by_class'),
-            class_freq=config.label_freq, 
-            train_num=config.train_num) 
+            class_freq=class_freq, 
+            train_num=train_num) 
         loss = loss_func(logits, targets)
         return loss
 
@@ -208,14 +214,16 @@ class RbceFocalLossArgumentModel(BaselineArgumentModel):
         super().__init__(encoder_model, lr, value_types, warmup_steps)
 
     def compute_loss(self, logits, targets):
+        class_freq = torch.tensor(config.label_freq, device=self.device)
+        train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func='rebalance', 
             loss_weight=1.0, 
             focal=dict(focal=True, alpha=0.5, gamma=2),
             logit_reg=dict(),
             map_param=dict(alpha=0.1, beta=10.0, gamma=0.9), 
-            class_freq=config.label_freq, 
-            train_num=config.train_num
+            class_freq=class_freq, 
+            train_num=train_num
             )
         loss = loss_func(logits, targets)
         return loss
@@ -225,13 +233,15 @@ class RbceFocalLossArgumentModel(BaselineArgumentModel):
 class NtrFocalLossArgumentModel(BaselineArgumentModel):
 
     def compute_loss(self, logits, targets):
+        class_freq = torch.tensor(config.label_freq, device=self.device)
+        train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func=None, 
             loss_weight=1.0,
             focal=dict(focal=True, alpha=0.5, gamma=2),
             logit_reg=dict(init_bias=0.05, neg_scale=2.0),
-            class_freq=config.label_freq,
-            train_num=config.train_num
+            class_freq=class_freq,
+            train_num=train_num
             )
         loss = loss_func(logits, targets)
         return loss
@@ -240,14 +250,16 @@ class NtrFocalLossArgumentModel(BaselineArgumentModel):
 class DbNoFocalLossArgumentModel(BaselineArgumentModel):
 
     def compute_loss(self, logits, targets):
+        class_freq = torch.tensor(config.label_freq, device=self.device)
+        train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func='rebalance', 
             loss_weight=0.5,
             focal=dict(focal=False, alpha=0.5, gamma=2),
             logit_reg=dict(init_bias=0.05, neg_scale=2.0),
             map_param=dict(alpha=0.1, beta=10.0, gamma=0.9), 
-            class_freq=config.label_freq,
-            train_num=config.train_num
+            class_freq=class_freq,
+            train_num=train_num
             )
         loss = loss_func(logits, targets)
         return loss
@@ -256,14 +268,16 @@ class DbNoFocalLossArgumentModel(BaselineArgumentModel):
 class ClassBalancedNtrLossArgumentModel(BaselineArgumentModel):
 
     def compute_loss(self, logits, targets):
+        class_freq = torch.tensor(config.label_freq, device=self.device)
+        train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func='CB', 
             loss_weight=10.0,
             focal=dict(focal=True, alpha=0.5, gamma=2),
             logit_reg=dict(init_bias=0.05, neg_scale=2.0),
             CB_loss=dict(CB_beta=0.9, CB_mode='by_class'),
-            class_freq=config.label_freq,
-            train_num=config.train_num
+            class_freq=class_freq,
+            train_num=train_num
             )
         loss = loss_func(logits, targets)
         return loss
@@ -272,14 +286,16 @@ class ClassBalancedNtrLossArgumentModel(BaselineArgumentModel):
 class DistributionBalancedLossArgumentModel(BaselineArgumentModel):
 
     def compute_loss(self, logits, targets):
+        class_freq = torch.tensor(config.label_freq, device=self.device)
+        train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func='rebalance', 
             loss_weight=1.0,
             focal=dict(focal=True, alpha=0.5, gamma=2),
             logit_reg=dict(init_bias=0.05, neg_scale=2.0),
             map_param=dict(alpha=0.1, beta=10.0, gamma=0.9), 
-            class_freq=config.label_freq,
-            train_num=config.train_num
+            class_freq=class_freq,
+            train_num=train_num
             )
         loss = loss_func(logits, targets)
         return loss
