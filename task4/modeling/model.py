@@ -85,6 +85,8 @@ class BaselineArgumentModel(ArgumentModel):
 
     def forward_step(self, batch):
         argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch
+        if self.encoder.config.type_vocab_size < 2:
+            token_type_ids = None
         outputs = self.encoder(
             input_ids=input_ids,
             token_type_ids=token_type_ids,

@@ -28,7 +28,7 @@ class ArgumentsDataset(Dataset, Registrable):
         super().__init__()
         self.instances = []
         self.labels = []
-        self.tokenizer = AutoTokenizer.from_pretrained(encoder_model)
+        self.tokenizer = AutoTokenizer.from_pretrained(encoder_model, add_prefix_space=True)
 
     def __getitem__(self, index: Any) -> Any:
         raise NotImplemented('')
@@ -56,7 +56,9 @@ class BaselineArgumentDataset(ArgumentsDataset):
         argument_id = argument_item.argument_id
         text = argument_item.conclusion + self.tokenizer.sep_token + argument_item.stance + self.tokenizer.sep_token + argument_item.premise
         outputs = self.tokenizer(text)
-        input_ids, token_type_ids, attention_mask = outputs['input_ids'], outputs['token_type_ids'], outputs['attention_mask']
+        input_ids, token_type_ids, attention_mask = outputs['input_ids'], outputs.get('token_type_ids', None), outputs['attention_mask']
+        if token_type_ids is None:
+            token_type_ids = [0] * len(input_ids)
         if label_item:
             label_ids = label_item.label
         else:
