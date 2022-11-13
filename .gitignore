@@ -140,3 +140,8 @@ lightning_logs
 
 # idea
 .idea/
+
+# other
+log/
+mlruns/
+output/
