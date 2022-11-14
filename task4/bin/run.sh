@@ -7,7 +7,7 @@ export PYTHONPATH=$PYTHONPATH
 cd ".."
 echo "当前工作路径: $(pwd)"
 
-for encoder_model in  'bert-base-uncased' 'bert-large-uncased'
+for encoder_model in  'bert-base-uncased' 'bert-large-uncased' 'roberta-large' 'albert-v2-base' 'albert-v2-large'
 do
     for max_epochs in 35
     do
