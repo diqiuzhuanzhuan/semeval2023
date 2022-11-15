@@ -2,6 +2,7 @@
 # author: Feynman
 # email: diqiuzhuanzhuan@gmail.com
 
+from typing import Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -35,8 +36,8 @@ class ResampleLoss(nn.Module):
             neg_scale=5.0,
             init_bias=0.1
             ),
-        class_freq=None,
-        train_num=None
+        class_freq: Optional[torch.Tensor] = None,
+        train_num: Optional[torch.Tensor] = None
         ):
 
         super(ResampleLoss, self).__init__()
@@ -72,9 +73,8 @@ class ResampleLoss(nn.Module):
         # CB loss params (optional)
         self.CB_beta = CB_loss['CB_beta']
         self.CB_mode = CB_loss['CB_mode']
-        nn.Module()
 
-        self.class_freq = torch.from_numpy(np.asarray(class_freq)).float()
+        self.class_freq = class_freq
         self.num_classes = self.class_freq.shape[0]
         self.train_num = train_num # only used to be divided by class_freq
         # regularization params
@@ -85,7 +85,7 @@ class ResampleLoss(nn.Module):
         self.init_bias = - torch.log(
             self.train_num / self.class_freq - 1) * init_bias ########################## bug fixed https://github.com/wutong16/DistributionBalancedLoss/issues/8
 
-        self.freq_inv = torch.ones(self.class_freq.shape) / self.class_freq
+        self.freq_inv = torch.ones(self.class_freq.shape, device=self.class_freq.device) / self.class_freq
         self.propotion_inv = self.train_num / self.class_freq
 
     def forward(self,
@@ -102,7 +102,7 @@ class ResampleLoss(nn.Module):
 
         weight = self.reweight_functions(label)
 
-        cls_score, weight = self.logit_reg_functions(label.float(), cls_score, weight)
+        cls_score, weight = self.logit_reg_functions(label, cls_score, weight)
 
         if self.focal:
             logpt = self.cls_criterion(
@@ -111,12 +111,12 @@ class ResampleLoss(nn.Module):
             # pt is sigmoid(logit) for pos or sigmoid(-logit) for neg
             pt = torch.exp(-logpt)
             wtloss = self.cls_criterion(
-                cls_score, label.float(), weight=weight, reduction='none')
+                cls_score, label, weight=weight, reduction='none')
             alpha_t = torch.where(label==1, self.alpha, 1-self.alpha)
             loss = alpha_t * ((1 - pt) ** self.gamma) * wtloss ####################### balance_param should be a tensor
             loss = reduce_loss(loss, reduction)             ############################ add reduction
         else:
-            loss = self.cls_criterion(cls_score, label.float(), weight,
+            loss = self.cls_criterion(cls_score, label, weight,
                                       reduction=reduction)
 
         loss = self.loss_weight * loss
@@ -126,11 +126,11 @@ class ResampleLoss(nn.Module):
         if self.reweight_func is None:
             return None
         elif self.reweight_func in ['inv', 'sqrt_inv']:
-            weight = self.RW_weight(label.float())
+            weight = self.RW_weight(label)
         elif self.reweight_func in 'rebalance':
-            weight = self.rebalance_weight(label.float())
+            weight = self.rebalance_weight(label)
         elif self.reweight_func in 'CB':
-            weight = self.CB_weight(label.float())
+            weight = self.CB_weight(label)
         else:
             return None
 
@@ -143,7 +143,7 @@ class ResampleLoss(nn.Module):
 
         return weight
 
-    def logit_reg_functions(self, labels, logits, weight=None): 
+    def logit_reg_functions(self, labels: torch.Tensor, logits: torch.Tensor, weight=None): 
         if not self.logit_reg:
             return logits, weight
         if 'init_bias' in self.logit_reg:
@@ -154,37 +154,37 @@ class ResampleLoss(nn.Module):
                 weight = weight / self.neg_scale * (1 - labels) + weight * labels
         return logits, weight
 
-    def rebalance_weight(self, gt_labels):
-        repeat_rate = torch.sum( gt_labels.float() * self.freq_inv, dim=1, keepdim=True)
+    def rebalance_weight(self, gt_labels: torch.Tensor):
+        repeat_rate = torch.sum( gt_labels * self.freq_inv, dim=1, keepdim=True)
         pos_weight = self.freq_inv.clone().detach().unsqueeze(0) / repeat_rate
         # pos and neg are equally treated
         weight = torch.sigmoid(self.map_beta * (pos_weight - self.map_gamma)) + self.map_alpha
         return weight
 
-    def CB_weight(self, gt_labels):
+    def CB_weight(self, gt_labels: torch.Tensor):
         if  'by_class' in self.CB_mode:
-            weight = torch.tensor((1 - self.CB_beta)) / \
+            weight = torch.tensor((1 - self.CB_beta), device=gt_labels.device) / \
                      (1 - torch.pow(self.CB_beta, self.class_freq))
         elif 'average_n' in self.CB_mode:
             avg_n = torch.sum(gt_labels * self.class_freq, dim=1, keepdim=True) / \
                     torch.sum(gt_labels, dim=1, keepdim=True)
-            weight = torch.tensor((1 - self.CB_beta)) / \
+            weight = torch.tensor((1 - self.CB_beta), device=gt_labels.device) / \
                      (1 - torch.pow(self.CB_beta, avg_n))
         elif 'average_w' in self.CB_mode:
-            weight_ = torch.tensor((1 - self.CB_beta)) / \
+            weight_ = torch.tensor((1 - self.CB_beta), device=gt_labels.device) / \
                       (1 - torch.pow(self.CB_beta, self.class_freq))
             weight = torch.sum(gt_labels * weight_, dim=1, keepdim=True) / \
                      torch.sum(gt_labels, dim=1, keepdim=True)
         elif 'min_n' in self.CB_mode:
             min_n, _ = torch.min(gt_labels * self.class_freq +
                                  (1 - gt_labels) * 100000, dim=1, keepdim=True)
-            weight = torch.tensor((1 - self.CB_beta)) / \
+            weight = torch.tensor((1 - self.CB_beta), device=gt_labels.device) / \
                      (1 - torch.pow(self.CB_beta, min_n))
         else:
             raise NameError
         return weight
 
-    def RW_weight(self, gt_labels, by_class=True):
+    def RW_weight(self, gt_labels: torch.Tensor, by_class=True):
         if 'sqrt' in self.reweight_func:
             weight = torch.sqrt(self.propotion_inv)
         else:
@@ -241,8 +241,8 @@ def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
 
 
 def binary_cross_entropy(
-    pred,
-    label,
+    pred: torch.Tensor,
+    label: torch.Tensor,
     weight=None,
     reduction='mean',
     avg_factor=None
@@ -253,7 +253,7 @@ def binary_cross_entropy(
         weight = weight.float()
 
     loss = F.binary_cross_entropy_with_logits(
-        pred, label.float(), weight, reduction='none')
+        pred, label, weight, reduction='none')
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
 
     return loss

@@ -7,13 +7,15 @@ export PYTHONPATH=$PYTHONPATH
 cd ".."
 echo "当前工作路径: $(pwd)"
 
-for encoder_model in  'bert-base-uncased' 'bert-large-uncased'
+for encoder_model in  'bert-base-uncased' 'bert-large-uncased' 'roberta-large' 'albert-v2-base' 'albert-v2-large'
 do
-    for max_epochs in 20
+    for max_epochs in 35
     do
         for batch_size in 16
         do
-            for model_type in 'baseline_argument_model' 'focal_loss_argument_model' 'class_balanced_loss_argument_model'
+            for model_type in 'ntr_focal_loss_argument_model' 'db_no_focal_loss_argument_model' 'class_balanced_ntr_loss_argument_model' \
+                              'distribution_balanced_loss_argument_model' 'rbce_focal_loss_argument_model' 'baseline_argument_model' \
+                              'focal_loss_argument_model' 'class_balanced_loss_argument_model'
             do
                 for dataset_type in 'baseline_argument_dataset'
                 do
