@@ -18,7 +18,7 @@ from allennlp.common.registrable import Registrable
 from allennlp.common.params import Params
 from transformers import AutoTokenizer
 
-
+os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 class ArgumentsDataset(Dataset, Registrable):
     
     def __init__(
