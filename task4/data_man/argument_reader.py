@@ -54,7 +54,7 @@ class BaselineArgumentDataset(ArgumentsDataset):
 
     def encode_input(self, argument_item: ArgumentItem, label_item: LabelItem) -> Tuple[str, List[int], List[int], List[int], List[int]]:
         argument_id = argument_item.argument_id
-        text = argument_item.conclusion + self.tokenizer.sep_token + argument_item.stance + self.tokenizer.sep_token + argument_item.premise
+        text = argument_item.premise + self.tokenizer.sep_token + argument_item.stance + self.tokenizer.sep_token + argument_item.conclusion
         outputs = self.tokenizer(text)
         input_ids, token_type_ids, attention_mask = outputs['input_ids'], outputs.get('token_type_ids', None), outputs['attention_mask']
         if token_type_ids is None:
