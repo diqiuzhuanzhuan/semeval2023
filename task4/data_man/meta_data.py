@@ -97,6 +97,18 @@ def read_labels_from_file(file: Union[bytes, str, os.PathLike]) -> List[LabelIte
     logging.info('read {} labels from {}.'.format(len(data), str(file)))
     return [LabelItem.from_dict(data.iloc[i]) for i in range(len(data))]
 
+def get_header_from_label_file(file: Union[bytes, str, os.PathLike]) -> List[str]:
+    """_summary_
+
+    Args:
+        file (Union[bytes, str, os.PathLike]): _description_
+
+    Returns:
+        List[str]: _description_
+    """
+    data = pd.read_csv(Path(file).as_posix(), delimiter='\t')
+    return list(data)
+
 
 if __name__ == "__main__":
     from task4.configuration import config

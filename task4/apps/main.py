@@ -17,6 +17,7 @@ from task4.configuration.config import logging
 import torch
 from task4.configuration import config
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
+from task4.data_man.meta_data import get_header_from_label_file
 
 def parse_arguments():
 
@@ -101,10 +102,13 @@ def write_test_results(test_results: List, out_file: Union[AnyStr, bytes, os.Pat
     out_file = Path(out_file)
     if not out_file.parent.exists():
         out_file.parent.mkdir(parents=True)
+    headers = get_header_from_label_file(config.validate_file['labels'])
     with open(str(out_file), 'w') as f:
+        f.write("\t".join(headers))
+        f.write("\n")
         for id, item in test_results:
             f.write(id+"\t")
-            [f.write(str(int(field))+"\t") for field in item]
+            f.write("\t".join([str(int(field)) for field in item]))
             f.write("\n")
         
 def test_model(model: ArgumentModel, data_module: pl.LightningDataModule):
