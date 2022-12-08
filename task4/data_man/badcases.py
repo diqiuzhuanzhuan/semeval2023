@@ -25,7 +25,7 @@ def analyze_badcase(pred_file: Union[AnyStr, os.PathLike],  label_file: Union[An
 if __name__ == "__main__": 
     from task4.configuration import config
     label_file = config.validate_file['labels']
-    pred_file = "./task4/data_man/val_f1=0.454.tsv"
+    pred_file = "./task4/data_man/val_f1=0.541.tsv"
     stat_map = analyze_badcase(pred_file, label_file)
     print(stat_map)
     
