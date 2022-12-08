@@ -29,15 +29,13 @@ train_file = {
 
 
 validate_file = {
-    'arguments': validate_data_path/'arguments-validate.tsv',
-    'labels': validate_data_path/'labels-validate.tsv',
-    'level1-labels': validate_data_path/'level1-labels-validate.tsv'
+    'arguments': validate_data_path/'arguments-validation.tsv',
+    'labels': validate_data_path/'labels-validation.tsv',
+    'level1-labels': validate_data_path/'level1-labels-validation.tsv'
 }
 
 test_file = {
-    'arguments': test_data_path/'arguments-validate.tsv',
-    'labels': test_data_path/'labels-validate.tsv',
-    'level1-labels': test_data_path/'level1-labels-validate.tsv'
+    'arguments': test_data_path/'arguments-test.tsv',
 }
 
 performance_log = log_path/'performance.csv'
