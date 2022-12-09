@@ -137,7 +137,7 @@ class BaselineArgumentDataModule(ArgumentDataModule):
         return torch.utils.data.DataLoader(val_reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
 
     def test_dataloader(self):
-        self.reader.read_data(config.test_file['arguments'], config.test_file['labels'])
+        self.reader.read_data(config.test_file['arguments'])
         test_reader = deepcopy(self.reader)
         return torch.utils.data.DataLoader(test_reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
     
