@@ -42,7 +42,7 @@ performance_log = log_path/'performance.csv'
 
 # label freq
 import pandas as pd
-data = pd.read_csv(train_file['arguments'], header=0, delimiter='\t')
+data = pd.read_csv(train_file['labels'], header=0, delimiter='\t')
 train_num = len(data)
 label_freq = [ data[column].sum() for column in list(data)[1:]]
 label_ratio = [freq/train_num for freq in label_freq]
