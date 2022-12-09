@@ -17,7 +17,6 @@ output_path = root_path/'output'
 train_data_path = data_path/'training_data'
 validate_data_path = data_path/'validate_data'
 test_data_path = data_path/'test_data'
-test_data_path = validate_data_path # wait for the time when testdata is released
 
 value_category_file = train_data_path/'value-categories.json'
 
