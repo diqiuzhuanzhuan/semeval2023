@@ -18,6 +18,8 @@ import torch
 from task4.configuration import config
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
 from task4.data_man.meta_data import get_header_from_label_file
+from task4.data_man.badcases import analyze_badcase
+
 
 def parse_arguments():
 
@@ -110,6 +112,14 @@ def write_test_results(test_results: List, out_file: Union[AnyStr, bytes, os.Pat
             f.write(id+"\t")
             f.write("\t".join([str(int(field)) for field in item]))
             f.write("\n")
+
+def validate_mode(model: ArgumentModel, data_module: pl.LightningDataModule): 
+    val_results = []
+    val_dataloader = data_module.val_dataloader()
+    for batch in tqdm(val_dataloader, total=val_dataloader.__len__()):
+        argument_id, batch_result = model.predict_tags(batch=batch)
+        val_results.extend(list(zip(*(argument_id, batch_result))))
+    return val_results
         
 def test_model(model: ArgumentModel, data_module: pl.LightningDataModule):
     test_results = []
@@ -177,6 +187,12 @@ if __name__ == '__main__':
     value_by_monitor = {monitor: get_best_value(best_checkpoint, monitor=monitor) for monitor in monitors}
     write_eval_performance(args, value_by_monitor, config.performance_log)
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
+    logging.info('recording predictions of validation file....')
+    val_results = validate_mode(argument_model, adm)
+    parent, file = generate_result_file_parent(args, value_by_monitor)
+    out_file = config.output_path/parent/'val/'/file
+    write_test_results(test_results=val_results, out_file=out_file)
+    logging.info('recording predictions of test file....')
     test_results = test_model(argument_model, adm)
     parent, file = generate_result_file_parent(args, value_by_monitor)
     out_file = config.output_path/parent/file
