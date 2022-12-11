@@ -30,7 +30,7 @@ def parse_arguments():
     parser.add_argument('--model_type', type=str, default='distribution_balanced_loss_argument_model', help='')
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
-    parser.add_argument('--max_epochs', type=int, default=1, help='')
+    parser.add_argument('--max_epochs', type=int, default=0, help='')
     parser.add_argument('--monitors', type=str, default="val_f1", help='a series of metrics using space as delimiter')
     parser.add_argument('--gpus', type=int, default=-1, help='')
     
@@ -113,19 +113,18 @@ def write_test_results(test_results: List, out_file: Union[AnyStr, bytes, os.Pat
             f.write("\t".join([str(int(field)) for field in item]))
             f.write("\n")
 
-def validate_mode(model: ArgumentModel, data_module: pl.LightningDataModule): 
+def validate_mode(trainer: pl.Trainer, model: ArgumentModel, data_module: pl.LightningDataModule): 
     val_results = []
-    val_dataloader = data_module.val_dataloader()
-    for batch in tqdm(val_dataloader, total=val_dataloader.__len__()):
-        argument_id, batch_result = model.predict_tags(batch=batch)
+    preds = trainer.predict(model=model, dataloaders=data_module.val_dataloader())
+    for argument_id, batch_result in preds:
         val_results.extend(list(zip(*(argument_id, batch_result))))
+        
     return val_results
         
 def test_model(model: ArgumentModel, data_module: pl.LightningDataModule):
     test_results = []
-    test_dataloader = data_module.test_dataloader()
-    for batch in tqdm(test_dataloader, total=test_dataloader.__len__()):
-        argument_id, batch_result = model.predict_tags(batch=batch)
+    preds = trainer.predict(model=model, dataloaders=data_module.test_dataloader())
+    for argument_id, batch_result in preds:
         test_results.extend(list(zip(*(argument_id, batch_result))))
     return test_results
 
@@ -188,7 +187,7 @@ if __name__ == '__main__':
     write_eval_performance(args, value_by_monitor, config.performance_log)
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
     logging.info('recording predictions of validation file....')
-    val_results = validate_mode(argument_model, adm)
+    val_results = validate_mode(trainer, argument_model, adm)
     parent, file = generate_result_file_parent(args, value_by_monitor)
     out_file = config.output_path/parent/'val/'/file
     write_test_results(test_results=val_results, out_file=out_file)
