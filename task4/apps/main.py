@@ -121,7 +121,7 @@ def validate_mode(trainer: pl.Trainer, model: ArgumentModel, data_module: pl.Lig
         
     return val_results
         
-def test_model(model: ArgumentModel, data_module: pl.LightningDataModule):
+def test_model(trainer:pl.Trainer, model: ArgumentModel, data_module: pl.LightningDataModule):
     test_results = []
     preds = trainer.predict(model=model, dataloaders=data_module.test_dataloader())
     for argument_id, batch_result in preds:
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     out_file = config.output_path/parent/'val/'/file
     write_test_results(test_results=val_results, out_file=out_file)
     logging.info('recording predictions of test file....')
-    test_results = test_model(argument_model, adm)
+    test_results = test_model(trainer, argument_model, adm)
     parent, file = generate_result_file_parent(args, value_by_monitor)
     out_file = config.output_path/parent/file
     write_test_results(test_results=test_results, out_file=out_file)
