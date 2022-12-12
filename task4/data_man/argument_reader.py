@@ -111,7 +111,7 @@ class BaselineArgumentDataModule(ArgumentDataModule):
         input_ids_tensor = torch.empty(size=[batch_size, max_len], dtype=torch.long).fill_(0)
         token_type_ids_tensor = torch.empty(size=[batch_size, max_len], dtype=torch.long).fill_(0)
         attention_mask_tensor = torch.empty(size=[batch_size, max_len], dtype=torch.long).fill_(0)
-        if label_ids:
+        if all(label_ids):
             max_label_len = max([len(_) for _ in label_ids])
             label_ids_tensor = torch.empty(size=[batch_size, max_label_len], dtype=torch.float).fill_(0)
         else:
