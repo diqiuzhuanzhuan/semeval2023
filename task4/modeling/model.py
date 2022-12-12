@@ -144,12 +144,12 @@ class BaselineArgumentModel(ArgumentModel):
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
         argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch
         outputs = self.forward_step(batch=batch)
-        return argument_id, outputs['predict'].numpy().tolist()
+        return argument_id, outputs['predict'].cpu().numpy().tolist()
 
     def predict_tags(self, batch: Any) -> Any:
         argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch
         outputs = self.forward_step(batch=batch)
-        return argument_id, outputs['predict'].numpy().tolist()
+        return argument_id, outputs['predict'].cpu().numpy().tolist()
 
 
 @ArgumentModel.register('focal_loss_argument_model') 
