@@ -17,6 +17,7 @@ output_path = root_path/'output'
 train_data_path = data_path/'training_data'
 validate_data_path = data_path/'validate_data'
 test_data_path = data_path/'test_data'
+badcases_data_path = data_path/'badcases_data'
 
 value_category_file = train_data_path/'value-categories.json'
 
