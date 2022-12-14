@@ -145,3 +145,4 @@ lightning_logs
 log/
 mlruns/
 output/
+badcases_data

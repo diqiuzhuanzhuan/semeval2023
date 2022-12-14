@@ -72,6 +72,21 @@ class BaselineArgumentDataset(ArgumentsDataset):
             return self.encode_input(self.instances[index], self.labels[index])
         return self.encode_input(self.instances[index], None)
 
+
+@ArgumentsDataset.register('premise_argument_dataset')
+class PremiseArgumentDataset(BaselineArgumentDataset):
+    def encode_input(self, argument_item: ArgumentItem, label_item: LabelItem) -> Tuple[str, List[int], List[int], List[int], List[int]]:
+        argument_id = argument_item.argument_id
+        text = argument_item.premise + self.tokenizer.sep_token
+        outputs = self.tokenizer(text)
+        input_ids, token_type_ids, attention_mask = outputs['input_ids'], outputs.get('token_type_ids', None), outputs['attention_mask']
+        if token_type_ids is None:
+            token_type_ids = [0] * len(input_ids)
+        if label_item:
+            label_ids = label_item.label
+        else:
+            label_ids = None
+        return argument_id, input_ids, token_type_ids, attention_mask, label_ids
         
 class ArgumentDataModule(pl.LightningDataModule, Registrable):
     pass

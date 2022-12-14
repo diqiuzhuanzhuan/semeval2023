@@ -17,7 +17,7 @@ do
                               'distribution_balanced_loss_argument_model' 'rbce_focal_loss_argument_model' 'baseline_argument_model' \
                               'focal_loss_argument_model' 'class_balanced_loss_argument_model'
             do
-                for dataset_type in 'baseline_argument_dataset'
+                for dataset_type in 'premise_argument_dataset'
                 do
                     for data_module_type in 'baseline_argument_data_module'
                     do
