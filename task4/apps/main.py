@@ -31,7 +31,7 @@ def parse_arguments():
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
     parser.add_argument('--max_epochs', type=int, default=0, help='')
-    parser.add_argument('--monitors', type=str, default="val_f1", help='a series of metrics using ## as delimiter')
+    parser.add_argument('--monitor', dest='monitors', action='append', help='a series of metrics')
     parser.add_argument('--gpus', type=int, default=-1, help='')
     
     args = parser.parse_args()
@@ -182,7 +182,7 @@ if __name__ == '__main__':
     trainer.fit(model=argument_model, datamodule=adm)
     _, best_checkpoint = save_model(trainer, model_name=args.model_type)
     logging.info('get best_checkpoint file: {}'.format(best_checkpoint))
-    monitors = args.monitors.split('##')
+    monitors = args.monitors
     value_by_monitor = {monitor: get_best_value(best_checkpoint, monitor=monitor) for monitor in monitors}
     write_eval_performance(args, value_by_monitor, config.performance_log)
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)

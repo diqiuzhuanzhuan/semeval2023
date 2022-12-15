@@ -21,7 +21,6 @@ do
                 do
                     for data_module_type in 'baseline_argument_data_module'
                     do
-                        for monitor in 'val_f1##val_Self-direction: action@f1'
                         python apps/main.py \
                         --encoder_model $encoder_model \
                         --max_epochs $max_epochs \
@@ -29,7 +28,9 @@ do
                         --model_type $model_type \
                         --dataset_type $dataset_type \
                         --data_module_type $data_module_type \
-                        --gpus -1
+                        --gpus -1 \
+                        --monitor 'val_f1' \
+                        --monitor 'val_Self-direction: action@f1'
                     done
                 done
             done            
