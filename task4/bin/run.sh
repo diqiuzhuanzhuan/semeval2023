@@ -7,7 +7,7 @@ export PYTHONPATH=$PYTHONPATH
 cd ".."
 echo "当前工作路径: $(pwd)"
 
-for encoder_model in  'bert-base-uncased' 'bert-large-uncased' 'roberta-large' 'albert-v2-base' 'albert-v2-large'
+for encoder_model in 'roberta-large' 
 do
     for max_epochs in 35
     do
@@ -21,6 +21,7 @@ do
                 do
                     for data_module_type in 'baseline_argument_data_module'
                     do
+                        for monitor in 'val_f1##val_Self-direction: action@f1'
                         python apps/main.py \
                         --encoder_model $encoder_model \
                         --max_epochs $max_epochs \
