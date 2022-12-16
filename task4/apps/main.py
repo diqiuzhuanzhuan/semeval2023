@@ -31,7 +31,7 @@ def parse_arguments():
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
     parser.add_argument('--max_epochs', type=int, default=1, help='')
-    parser.add_argument('--monitor', dest='monitors', action='append', default=['val_f1'], help='a series of metrics')
+    parser.add_argument('--monitor', type=str, default='val_f1', help='a metric determined to monitor the best model')
     parser.add_argument('--gpus', type=int, default=-1, help='')
     
     args = parser.parse_args()
@@ -50,13 +50,13 @@ def get_model_earlystopping_callback(monitor='val_f1', mode:Union['max', 'min']=
     return es_clb
 
 
-def get_model_best_checkpoint_callback(dirpath='checkpoints', monitors=['val_f1'], mode:Union['max', 'min']='max'):
-    s = '-'.join(['{' + '{}:.3f'.format(m.replace(':', ''))+ '}' for m in monitors])
+def get_model_best_checkpoint_callback(dirpath='checkpoints', monitors='val_f1', mode:Union['max', 'min']='max'):
+    s = '{' + '{}:.3f'.format(monitors)+ '}'
     bc_clb = ModelCheckpoint(
         filename='{epoch}-'+ s + '-{val_loss:.2f}',
         save_top_k=1,
         verbose=True,
-        monitor=monitors[0],
+        monitor=monitors,
         mode=mode
         )
     return  bc_clb
@@ -131,7 +131,7 @@ def test_model(trainer:pl.Trainer, model: ArgumentModel, data_module: pl.Lightni
 
 def generate_result_file_parent(args: argparse.Namespace, value_by_monitor: Dict):
     parent_name = "_".join(["{}={}".format(k, v) for k, v in args._get_kwargs()])
-    name = "_".join(["{}={}".format(k, str(value_by_monitor[k])) for k in value_by_monitor]) + ".tsv"
+    name = "{}={}".format(args.monitor, str(value_by_monitor[args.monitor])) + ".tsv"
     return parent_name, name
     
 def get_best_value(checkpoint_file: AnyStr, monitor: AnyStr='val_f1'):
@@ -145,7 +145,7 @@ def get_lr_logger():
 
 def get_trainer(args):
     pl.seed_everything(42)
-    callbacks = [get_model_earlystopping_callback(), get_model_best_checkpoint_callback(monitors=args.monitors)]
+    callbacks = [get_model_earlystopping_callback(), get_model_best_checkpoint_callback(monitors=args.monitor)]
 
 
     if torch.cuda.is_available():
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     trainer.fit(model=argument_model, datamodule=adm)
     _, best_checkpoint = save_model(trainer, model_name=args.model_type)
     logging.info('get best_checkpoint file: {}'.format(best_checkpoint))
-    monitors = args.monitors
+    monitors = args.monitor
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
     logging.info('recording predictions of validation file....')
     val_results = validate_mode(trainer, argument_model, adm)

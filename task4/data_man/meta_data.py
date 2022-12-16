@@ -43,7 +43,6 @@ class ArgumentDataset:
 def get_id_to_type():
     return_map = dict()
     for i, ele in enumerate(config.LABEL_NAME):
-        ele = ele.replace(':', '')
         return_map[i] = ele
     return return_map
 
