@@ -8,6 +8,7 @@ from typing import Dict, List, Union
 import os
 import pandas as pd
 from pathlib import Path
+from task4.configuration import config
 from task4.configuration.config import logging
 
 
@@ -38,13 +39,10 @@ class ArgumentDataset:
     arguments: List[ArgumentItem]
 
     
-LABEL_NAME = ['Self-direction: thought', 'Self-direction: action', 'Stimulation', 'Hedonism', 'Achievement', 'Power: dominance', 'Power: resources', 'Face', 'Security: personal',
-    'Security: societal', 'Tradition', 'Conformity: rules', 'Conformity: interpersonal', 'Humility', 'Benevolence: caring', 'Benevolence: dependability', 'Universalism: concern',
-    'Universalism: nature', 'Universalism: tolerance', 'Universalism: objectivity']
 
 def get_id_to_type():
     return_map = dict()
-    for i, ele in enumerate(LABEL_NAME):
+    for i, ele in enumerate(config.LABEL_NAME):
         ele = ele.replace(':', '')
         return_map[i] = ele
     return return_map
@@ -59,7 +57,7 @@ class LabelItem:
     def from_dict(cls, json_dict: Dict):
         return LabelItem(
             argument_id=json_dict['Argument ID'],
-            label=[json_dict[key] for key in LABEL_NAME]
+            label=[json_dict[key] for key in config.LABEL_NAME]
         )
         
 

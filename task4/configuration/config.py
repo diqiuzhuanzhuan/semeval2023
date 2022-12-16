@@ -40,9 +40,15 @@ test_file = {
 
 performance_log = log_path/'performance.csv'
 
+LABEL_NAME = ['Self-direction: thought', 'Self-direction: action', 'Stimulation', 'Hedonism', 'Achievement', 'Power: dominance', 'Power: resources', 'Face', 'Security: personal',
+    'Security: societal', 'Tradition', 'Conformity: rules', 'Conformity: interpersonal', 'Humility', 'Benevolence: caring', 'Benevolence: dependability', 'Universalism: concern',
+    'Universalism: nature', 'Universalism: tolerance', 'Universalism: objectivity']
+LABEL_NAME = ['Self-direction: thought', 'Self-direction: action', ]
+
+
 # label freq
 import pandas as pd
-data = pd.read_csv(train_file['labels'], header=0, delimiter='\t')
+data = pd.read_csv(train_file['labels'], header=0, delimiter='\t', names=LABEL_NAME)
 train_num = len(data)
 label_freq = [ data[column].sum() for column in list(data)[1:]]
 label_ratio = [freq/train_num for freq in label_freq]

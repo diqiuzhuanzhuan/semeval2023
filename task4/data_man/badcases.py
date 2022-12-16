@@ -4,7 +4,8 @@
 
 import os, collections
 from typing import AnyStr, Union
-from task4.data_man.meta_data import read_labels_from_file, LABEL_NAME
+from task4.data_man.meta_data import read_labels_from_file
+from task4.configuration import config
 
 def analyze_badcase(pred_file: Union[AnyStr, os.PathLike],  label_file: Union[AnyStr, os.PathLike]):
     pred_file = str(pred_file)
@@ -18,7 +19,7 @@ def analyze_badcase(pred_file: Union[AnyStr, os.PathLike],  label_file: Union[An
         for i, value in enumerate(pred_item.label):
             if pred_item.label[i] == label_item.label[i]:
                 continue
-            stat_map[LABEL_NAME[i]].add(label_item.argument_id)
+            stat_map[config.LABEL_NAME[i]].add(label_item.argument_id)
     return stat_map
                 
             

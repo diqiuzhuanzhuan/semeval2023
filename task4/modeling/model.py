@@ -78,6 +78,9 @@ class BaselineArgumentModel(ArgumentModel):
             'value_types': value_types, 
             'warmup_steps': warmup_steps
             })
+    
+    def get_metric(self):
+        return self.metric.compute()
 
     def compute_loss(self, logits, targets):
         loss = torch.nn.BCEWithLogitsLoss()(logits, targets)

@@ -30,8 +30,8 @@ def parse_arguments():
     parser.add_argument('--model_type', type=str, default='distribution_balanced_loss_argument_model', help='')
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
-    parser.add_argument('--max_epochs', type=int, default=0, help='')
-    parser.add_argument('--monitor', dest='monitors', action='append', help='a series of metrics')
+    parser.add_argument('--max_epochs', type=int, default=1, help='')
+    parser.add_argument('--monitor', dest='monitors', action='append', default=['val_f1'], help='a series of metrics')
     parser.add_argument('--gpus', type=int, default=-1, help='')
     
     args = parser.parse_args()
@@ -135,7 +135,7 @@ def generate_result_file_parent(args: argparse.Namespace, value_by_monitor: Dict
     return parent_name, name
     
 def get_best_value(checkpoint_file: AnyStr, monitor: AnyStr='val_f1'):
-    pattern = r'{}=(.*)-'.format(monitor)
+    pattern = r'{}=(.*?)-'.format(monitor)
     val = re.findall(pattern, checkpoint_file)[0]
     return float(val)
 
@@ -178,18 +178,19 @@ if __name__ == '__main__':
 
     params = Params({
         'type': args.model_type,
-        'encoder_model': args.encoder_model
+        'encoder_model': args.encoder_model,
+        'value_types': len(config.LABEL_NAME)
     })
     argument_model = ArgumentModel.from_params(params=params)
     trainer.fit(model=argument_model, datamodule=adm)
     _, best_checkpoint = save_model(trainer, model_name=args.model_type)
     logging.info('get best_checkpoint file: {}'.format(best_checkpoint))
     monitors = args.monitors
-    value_by_monitor = {monitor: get_best_value(best_checkpoint, monitor=monitor) for monitor in monitors}
-    write_eval_performance(args, value_by_monitor, config.performance_log)
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
     logging.info('recording predictions of validation file....')
     val_results = validate_mode(trainer, argument_model, adm)
+    value_by_monitor = argument_model.get_metric()
+    write_eval_performance(args, value_by_monitor, config.performance_log)
     parent, file = generate_result_file_parent(args, value_by_monitor)
     out_file = config.output_path/parent/'val/'/file
     write_test_results(test_results=val_results, out_file=out_file)
