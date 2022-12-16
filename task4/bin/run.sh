@@ -30,7 +30,27 @@ do
                         --data_module_type $data_module_type \
                         --gpus -1 \
                         --monitor 'val_f1' \
-                        --monitor 'val_Self-direction: action@f1'
+                        --monitor 'val_Self-direction: action@f1' \
+                        --monitor 'Self-direction: thought@f1' \
+                        --monitor 'Stimulation@f1' \
+                        --monitor 'Hedonism@f1' \
+                        --monitor 'Achievement@1' \
+                        --monitor 'Power: dominance@f1' \
+                        --monitor 'Power: resources@f1' \
+                        --monitor 'Face@f1' \
+                        --monitor 'Security: personal@f1' \
+                        --monitor 'Security: societal@f1' \
+                        --monitor 'Tradition@f1' \
+                        --monitor 'Conformity: rules@f1' \
+                        --monitor 'Conformity: interpersonal@f1' \
+                        --monitor 'Humility@f1' \
+                        --monitor 'Benevolence: caring@f1' \
+                        --monitor 'Benevolence: dependability@f1' \
+                        --monitor 'Universalism: concern@f1' \
+                        --monitor 'Universalism: nature@f1' \
+                        --monitor 'Universalism: tolerance@f1' \
+                        --monitor 'Universalism: objectivity@f1'
+
                     done
                 done
             done            
