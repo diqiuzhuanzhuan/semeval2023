@@ -45,6 +45,7 @@ LABEL_NAME = ['Self-direction: thought', 'Self-direction: action', 'Stimulation'
 def get_id_to_type():
     return_map = dict()
     for i, ele in enumerate(LABEL_NAME):
+        ele = ele.replace(':', '')
         return_map[i] = ele
     return return_map
 

@@ -50,12 +50,13 @@ def get_model_earlystopping_callback(monitor='val_f1', mode:Union['max', 'min']=
     return es_clb
 
 
-def get_model_best_checkpoint_callback(dirpath='checkpoints', monitor='val_f1', mode:Union['max', 'min']='max'):
+def get_model_best_checkpoint_callback(dirpath='checkpoints', monitors=['val_f1'], mode:Union['max', 'min']='max'):
+    s = '-'.join(['{' + '{}:.3f'.format(m.replace(':', ''))+ '}' for m in monitors])
     bc_clb = ModelCheckpoint(
-        filename='{{epoch}}-{{{}:.3f}}-{{val_loss:.2f}}'.format(monitor),
+        filename='{epoch}-'+ s + '-{val_loss:.2f}',
         save_top_k=1,
         verbose=True,
-        monitor=monitor,
+        monitor=monitors[0],
         mode=mode
         )
     return  bc_clb
@@ -144,7 +145,8 @@ def get_lr_logger():
 
 def get_trainer(args):
     pl.seed_everything(42)
-    callbacks = [get_model_earlystopping_callback(), get_model_best_checkpoint_callback()]
+    callbacks = [get_model_earlystopping_callback(), get_model_best_checkpoint_callback(monitors=args.monitors)]
+
 
     if torch.cuda.is_available():
         trainer = pl.Trainer(accelerator='gpu', devices=args.gpus, max_epochs=args.max_epochs, callbacks=callbacks)
