@@ -27,7 +27,7 @@ def parse_arguments():
 
     parser.add_argument('--data_module_type', type=str, default='baseline_argument_data_module',help='')
     parser.add_argument('--dataset_type', type=str, default='baseline_argument_dataset', help='')
-    parser.add_argument('--model_type', type=str, default='distribution_balanced_loss_argument_model', help='')
+    parser.add_argument('--model_type', type=str, default='threshold_layer_argument_model', help='')
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
     parser.add_argument('--max_epochs', type=int, default=1, help='')
@@ -128,8 +128,8 @@ def test_model(trainer:pl.Trainer, model: ArgumentModel, data_module: pl.Lightni
         test_results.extend(list(zip(*(argument_id, batch_result))))
     return test_results
 
-def generate_result_file_parent(args: argparse.Namespace, value_by_monitor: Dict):
-    parent_name = "_".join(["{}={}".format(k, v) for k, v in args._get_kwargs()])
+def generate_result_file_parent(trainer: pl.Trainer, args: argparse.Namespace, value_by_monitor: Dict):
+    parent_name = Path("_".join(["{}={}".format(k, v) for k, v in args._get_kwargs()]))/('version_'+str(trainer.logger.version))
     name = "{}={}".format(args.monitor, str(value_by_monitor[args.monitor])) + ".tsv"
     return parent_name, name
     
@@ -191,9 +191,12 @@ if __name__ == '__main__':
     value_by_monitor = argument_model.get_metric()
     trainer.validate(model=argument_model, datamodule=adm)
     write_eval_performance(args, value_by_monitor, config.performance_log)
-    parent, file = generate_result_file_parent(args, value_by_monitor)
+    parent, file = generate_result_file_parent(trainer, args, value_by_monitor)
     out_file = config.output_path/parent/'val/'/file
     write_test_results(test_results=val_results, out_file=out_file)
+    #write performance metrics for future reference
+    out_file = config.output_path/parent/'metrics.tsv'
+    write_eval_performance(args, value_by_monitor, out_file)
     logging.info('recording predictions of test file....')
     test_results = test_model(trainer, argument_model, adm)
     parent, file = generate_result_file_parent(args, value_by_monitor)

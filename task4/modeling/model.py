@@ -157,6 +157,60 @@ class BaselineArgumentModel(ArgumentModel):
         outputs = self.forward_step(batch=batch)
         return argument_id, outputs['predict'].cpu().numpy().tolist()
 
+@ArgumentModel.register('threshold_layer_argument_model')
+class ThresholdLayerArgumentModel(BaselineArgumentModel):
+    
+    def __init__(
+        self, 
+        encoder_model: AnyStr='bert-base-uncased',
+        lr: float=1e-5,
+        value_types: int=20,
+        warmup_steps: int=1000,
+        ) -> None:
+        super().__init__()
+        self.encoder = AutoModel.from_pretrained(encoder_model)
+        self.value_types = value_types
+        self.fc1 = torch.nn.Linear(self.encoder.config.hidden_size, 512)
+        self.fc2 = torch.nn.Linear(512, 512)
+        self.multi_label_weight = torch.nn.Linear(512, self.value_types)
+        
+        self.lr = lr
+        self.warmup_steps = warmup_steps
+        self.metric = ValueMetric(id_to_type=get_id_to_type(), rare_type=[])
+        self.save_hyperparameters({
+            'encoder_model': encoder_model, 
+            'lr': lr, 
+            'value_types': value_types, 
+            'warmup_steps': warmup_steps
+            })
+
+    def forward_step(self, batch):
+        argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch
+        if self.encoder.config.type_vocab_size < 2:
+            token_type_ids = None
+        outputs = self.encoder(
+            input_ids=input_ids,
+            token_type_ids=token_type_ids,
+            attention_mask=attention_mask
+        )
+        cls_hidden_state = outputs.last_hidden_state[:, 0, :]  # get [CLS]
+        fc1_output = self.fc1(cls_hidden_state)
+        fc2_output = self.fc2(fc1_output)
+
+        logits = self.multi_label_weight(fc2_output)
+        predict = (torch.nn.Sigmoid()(logits) > 0.5) * 1.0
+        return_dict = {
+            'logits': logits, 
+            'predict': predict
+        }
+        if label_ids is not None:
+            loss = self.compute_loss(logits, label_ids)
+            return_dict['loss'] = loss
+            self.metric.update(preds=predict, target=label_ids)
+            return_dict['metric'] = self.metric.compute()
+
+        return return_dict
+
 
 @ArgumentModel.register('focal_loss_argument_model') 
 class FocalLossArgumentModel(BaselineArgumentModel):
