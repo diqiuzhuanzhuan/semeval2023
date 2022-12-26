@@ -199,7 +199,7 @@ if __name__ == '__main__':
     write_eval_performance(args, value_by_monitor, out_file)
     logging.info('recording predictions of test file....')
     test_results = test_model(trainer, argument_model, adm)
-    parent, file = generate_result_file_parent(args, value_by_monitor)
+    parent, file = generate_result_file_parent(trainer, args, value_by_monitor)
     out_file = config.output_path/parent/file
     write_test_results(test_results=test_results, out_file=out_file)
     
