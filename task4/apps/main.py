@@ -3,6 +3,8 @@
 # email: diqiuzhuanzhuan@gmail.com
 
 import argparse
+import collections
+from sklearn.model_selection import KFold
 from pathlib import Path
 import pandas as pd
 import os, re, sys
@@ -18,7 +20,6 @@ import torch
 from task4.configuration import config
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
 from task4.data_man.meta_data import get_header_from_label_file
-from task4.data_man.badcases import analyze_badcase
 
 
 def parse_arguments():
@@ -33,11 +34,40 @@ def parse_arguments():
     parser.add_argument('--max_epochs', type=int, default=1, help='')
     parser.add_argument('--monitor', type=str, default='val_f1', help='a metric determined to monitor the best model')
     parser.add_argument('--gpus', type=int, default=-1, help='')
+    parser.add_argument('--cross_validation', type=int, default=5, help='make k-fold cross validation')
     
     args = parser.parse_args()
 
     return args 
 
+    
+def k_fold(k: int=10):
+    if k == 0:
+        raise ValueError('k should be larger than 0')
+    
+    kf = KFold(n_splits=k, shuffle=True, random_state=42)
+    if not config.kfold_data_path.exists():
+        config.kfold_data_path.mkdir()
+    
+    data1 = pd.read_csv(Path(config.train_file['arguments']).as_posix(), delimiter='\t')
+    data2 = pd.read_csv(Path(config.validate_file['arguments']).as_posix(), delimiter='\t')
+    data = pd.concat([data1, data2])
+    l1 = pd.read_csv(Path(config.train_file['labels']).as_posix(), delimiter='\t')
+    l2 = pd.read_csv(Path(config.validate_file['labels']).as_posix(), delimiter='\t')
+    l = pd.concat([l1, l2])
+    index = 0
+    for train, val in kf.split(data):
+        train_argument_file = config.kfold_data_path/'arguments-training_{}.tsv'.format(index)
+        validation_argument_file = config.kfold_data_path/'arguments-validation_{}.tsv'.format(index)
+        train_label_file = config.kfold_data_path/'labels-training_{}.tsv'.format(index)
+        validation_label_file = config.kfold_data_path/'labels-validation_{}.tsv'.format(index)
+        data.iloc[train].to_csv(train_argument_file, sep='\t', index=False)
+        l.iloc[train].to_csv(train_label_file, sep='\t', index=False)
+        data.iloc[val].to_csv(validation_argument_file, sep='\t', index=False)
+        l.iloc[val].to_csv(validation_label_file, sep='\t', index=False)
+        index += 1
+        yield train_argument_file, train_label_file, validation_argument_file, validation_label_file
+        
 
 def get_model_earlystopping_callback(monitor='val_f1', mode:Union['max', 'min']='max', min_delta=0.001):
     es_clb = EarlyStopping(
@@ -162,17 +192,19 @@ def show_args(args):
     log_info = "\n" + "\n".join(['{}: {}'.format(k, v) for k, v in args._get_kwargs()])
     logging.info(log_info)
 
-if __name__ == '__main__':
-    args = parse_arguments()
-    show_args(args)
-    trainer = get_trainer(args)
+
+def main(args: argparse.Namespace, train_arguments_file, train_label_file, val_arguments_file, val_label_file):
     adm = ArgumentDataModule.from_params(Params({
         'type': args.data_module_type,
         'reader': Params({
             'type': args.dataset_type,
             'encoder_model': args.encoder_model
         }),
-        'batch_size': args.batch_size
+        'batch_size': args.batch_size,
+        'train_arguments_file': train_arguments_file,
+        'train_label_file': train_label_file,
+        'val_arguments_file': val_arguments_file,
+        'val_label_file': val_label_file
     }))
 
     params = Params({
@@ -202,5 +234,16 @@ if __name__ == '__main__':
     parent, file = generate_result_file_parent(trainer, args, value_by_monitor)
     out_file = config.output_path/parent/file
     write_test_results(test_results=test_results, out_file=out_file)
-    
+
+if __name__ == '__main__':
+    args = parse_arguments()
+    show_args(args)
+    trainer = get_trainer(args)
+
+    if args.cross_validation == 1:
+        main(args, config.train_file['arguments'], config.train_file['labels'], config.validate_file['arguments'], config.validate_file['labels'])
+    else:
+        for train_arguments_file, train_label_file, val_arguments_file, val_label_file in k_fold(args.cross_validation):
+            main(args, train_arguments_file, train_label_file, val_arguments_file, val_label_file)
+
     sys.exit(0)

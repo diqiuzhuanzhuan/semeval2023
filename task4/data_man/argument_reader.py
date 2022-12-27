@@ -115,11 +115,19 @@ class BaselineArgumentDataModule(ArgumentDataModule):
     def __init__(
         self, 
         reader: ArgumentsDataset,
+        train_arguments_file: AnyStr,
+        train_label_file: AnyStr,
+        val_arguments_file: AnyStr,
+        val_label_file: AnyStr,
         batch_size=16
         ):
         super().__init__()
         self.reader = reader
         self.batch_size = batch_size
+        self.train_arguments_file = train_arguments_file
+        self.train_label_file = train_label_file
+        self.val_arguments_file = val_arguments_file
+        self.val_label_file = val_label_file
         
     def setup(self, stage: Optional[str] = None) -> None:
         if stage == 'fit':
@@ -159,12 +167,12 @@ class BaselineArgumentDataModule(ArgumentDataModule):
         return argument_id, input_ids_tensor, token_type_ids_tensor, attention_mask_tensor, label_ids_tensor
 
     def train_dataloader(self):
-        self.reader.read_data(config.train_file['arguments'], config.train_file['labels'])
+        self.reader.read_data(self.train_arguments_file, self.train_label_file)
         train_reader = deepcopy(self.reader)
         return torch.utils.data.DataLoader(train_reader, batch_size=self.batch_size, collate_fn=self.collate_batch, shuffle=True, num_workers=8)
 
     def val_dataloader(self):
-        self.reader.read_data(config.validate_file['arguments'], config.validate_file['labels'])
+        self.reader.read_data(self.val_arguments_file, self.val_label_file)
         val_reader = deepcopy(self.reader)
         return torch.utils.data.DataLoader(val_reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
 
@@ -193,7 +201,11 @@ if __name__ == "__main__":
         'reader': Params({
             'type': 'baseline_argument_dataset'    
         }),
-        'batch_size': 2
+        'batch_size': 2,
+        'train_arguments_file': config.train_file['arguments'],
+        'train_label_file': config.train_file['labels'], 
+        'val_arguments_file': config.validate_file['arguments'],
+        'val_label_file': config.validate_file['labels'],
     }))
     adm.setup(stage='fit')
     t_train = adm.train_dataloader()

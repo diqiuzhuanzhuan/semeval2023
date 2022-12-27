@@ -14,6 +14,7 @@ log_path = root_path/'logs'
 output_path = root_path/'output'
 
 train_data_path = data_path/'training_data'
+kfold_data_path = data_path/'kfold'
 validate_data_path = data_path/'validate_data'
 test_data_path = data_path/'test_data'
 badcases_data_path = data_path/'badcases_data'
@@ -25,7 +26,6 @@ train_file = {
     'labels': train_data_path/'labels-training.tsv',
     'level1-labels': train_data_path/'level1-labels-training.tsv'
 }
-
 
 validate_file = {
     'arguments': validate_data_path/'arguments-validation.tsv',
