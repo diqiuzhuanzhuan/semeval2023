@@ -29,6 +29,7 @@ do
                         --dataset_type $dataset_type \
                         --data_module_type $data_module_type \
                         --gpus -1 \
+                        --cross_validation 10 \
                         --monitor 'val_f1' 
 
                     done

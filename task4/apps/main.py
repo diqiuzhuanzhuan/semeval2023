@@ -194,6 +194,7 @@ def show_args(args):
 
 
 def main(args: argparse.Namespace, train_arguments_file, train_label_file, val_arguments_file, val_label_file):
+    trainer = get_trainer(args)
     adm = ArgumentDataModule.from_params(Params({
         'type': args.data_module_type,
         'reader': Params({
@@ -238,7 +239,6 @@ def main(args: argparse.Namespace, train_arguments_file, train_label_file, val_a
 if __name__ == '__main__':
     args = parse_arguments()
     show_args(args)
-    trainer = get_trainer(args)
 
     if args.cross_validation == 1:
         main(args, config.train_file['arguments'], config.train_file['labels'], config.validate_file['arguments'], config.validate_file['labels'])
