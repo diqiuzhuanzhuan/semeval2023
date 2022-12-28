@@ -217,7 +217,6 @@ def main(args: argparse.Namespace, train_arguments_file, train_label_file, val_a
     trainer.fit(model=argument_model, datamodule=adm)
     _, best_checkpoint = save_model(trainer, model_name=args.model_type)
     logging.info('get best_checkpoint file: {}'.format(best_checkpoint))
-    monitors = args.monitor
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
     logging.info('recording predictions of validation file....')
     val_results = validate_mode(trainer, argument_model, adm)
