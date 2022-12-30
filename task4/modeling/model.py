@@ -66,12 +66,15 @@ class BaselineArgumentModel(ArgumentModel):
         encoder_model: AnyStr='bert-base-uncased',
         lr: float=1e-5,
         value_types: int=20,
+        level1_value_types: int=54,
         warmup_steps: int=1000,
         ) -> None:
         super().__init__()
         self.encoder = AutoModel.from_pretrained(encoder_model)
         self.value_types = value_types
+        self.level1_value_types = level1_value_types
         self.multi_label_weight = torch.nn.Linear(self.encoder.config.hidden_size, self.value_types)
+        self.level1_label_weight = torch.nn.Linear(self.encoder.config.hidden_size, self.level1_value_types)
         self.lr = lr
         self.warmup_steps = warmup_steps
         self.metric = ValueMetric(id_to_type=get_id_to_type(), rare_type=[])
@@ -79,18 +82,19 @@ class BaselineArgumentModel(ArgumentModel):
             'encoder_model': encoder_model, 
             'lr': lr, 
             'value_types': value_types, 
+            'level1_value_types': level1_value_types,
             'warmup_steps': warmup_steps
             })
     
     def get_metric(self):
         return self.last_metrics
 
-    def compute_loss(self, logits, targets):
+    def compute_loss(self, logits, targets, level1=False):
         loss = torch.nn.BCEWithLogitsLoss()(logits, targets)
         return loss
 
     def forward_step(self, batch):
-        argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch
+        argument_id, input_ids, token_type_ids, attention_mask, label_ids, level1_label_ids = batch
         if self.encoder.config.type_vocab_size < 2:
             token_type_ids = None
         outputs = self.encoder(
@@ -100,13 +104,14 @@ class BaselineArgumentModel(ArgumentModel):
         )
         cls_hidden_state = outputs.last_hidden_state[:, 0, :]  # get [CLS]
         logits = self.multi_label_weight(cls_hidden_state)
+        level1_logits = self.level1_label_weight(cls_hidden_state)
         predict = (torch.nn.Sigmoid()(logits) > 0.5) * 1.0
         return_dict = {
             'logits': logits, 
             'predict': predict
         }
         if label_ids is not None:
-            loss = self.compute_loss(logits, label_ids)
+            loss = self.compute_loss(logits, label_ids) + self.compute_loss(level1_logits, level1_label_ids, level1=True)
             return_dict['loss'] = loss
             self.metric.update(preds=predict, target=label_ids)
             return_dict['metric'] = self.metric.compute()
@@ -148,7 +153,7 @@ class BaselineArgumentModel(ArgumentModel):
         return outputs
     
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
-        argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch
+        argument_id, input_ids, token_type_ids, attention_mask, label_ids, level1_label_ids = batch
         outputs = self.forward_step(batch=batch)
         return argument_id, outputs['predict'].cpu().numpy().tolist()
 
@@ -156,60 +161,6 @@ class BaselineArgumentModel(ArgumentModel):
         argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch
         outputs = self.forward_step(batch=batch)
         return argument_id, outputs['predict'].cpu().numpy().tolist()
-
-@ArgumentModel.register('threshold_layer_argument_model')
-class ThresholdLayerArgumentModel(BaselineArgumentModel):
-    
-    def __init__(
-        self, 
-        encoder_model: AnyStr='bert-base-uncased',
-        lr: float=1e-5,
-        value_types: int=20,
-        warmup_steps: int=1000,
-        ) -> None:
-        super().__init__()
-        self.encoder = AutoModel.from_pretrained(encoder_model)
-        self.value_types = value_types
-        self.fc1 = torch.nn.Linear(self.encoder.config.hidden_size, 512)
-        self.fc2 = torch.nn.Linear(512, 512)
-        self.multi_label_weight = torch.nn.Linear(512, self.value_types)
-        
-        self.lr = lr
-        self.warmup_steps = warmup_steps
-        self.metric = ValueMetric(id_to_type=get_id_to_type(), rare_type=[])
-        self.save_hyperparameters({
-            'encoder_model': encoder_model, 
-            'lr': lr, 
-            'value_types': value_types, 
-            'warmup_steps': warmup_steps
-            })
-
-    def forward_step(self, batch):
-        argument_id, input_ids, token_type_ids, attention_mask, label_ids = batch
-        if self.encoder.config.type_vocab_size < 2:
-            token_type_ids = None
-        outputs = self.encoder(
-            input_ids=input_ids,
-            token_type_ids=token_type_ids,
-            attention_mask=attention_mask
-        )
-        cls_hidden_state = outputs.last_hidden_state[:, 0, :]  # get [CLS]
-        fc1_output = self.fc1(cls_hidden_state)
-        fc2_output = self.fc2(fc1_output)
-
-        logits = self.multi_label_weight(fc2_output)
-        predict = (torch.nn.Sigmoid()(logits) > 0.5) * 1.0
-        return_dict = {
-            'logits': logits, 
-            'predict': predict
-        }
-        if label_ids is not None:
-            loss = self.compute_loss(logits, label_ids)
-            return_dict['loss'] = loss
-            self.metric.update(preds=predict, target=label_ids)
-            return_dict['metric'] = self.metric.compute()
-
-        return return_dict
 
 
 @ArgumentModel.register('focal_loss_argument_model') 
@@ -220,12 +171,16 @@ class FocalLossArgumentModel(BaselineArgumentModel):
         encoder_model: AnyStr = 'bert-base-uncased', 
         lr: float = 0.00001, 
         value_types: int = 20, 
+        level1_value_types: int=54,
         warmup_steps: int = 1000
         ) -> None:
-        super().__init__(encoder_model, lr, value_types, warmup_steps)
+        super().__init__(encoder_model, lr, value_types, level1_value_types, warmup_steps)
 
-    def compute_loss(self, logits, targets):
-        class_freq = torch.tensor(config.label_freq, device=self.device)
+    def compute_loss(self, logits, targets, level1=False):
+        if not level1:
+            class_freq = torch.tensor(config.label_freq, device=self.device)
+        else:
+            class_freq = torch.tensor(config.level1_label_freq, device=self.device)
         train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func=None, 
@@ -246,12 +201,16 @@ class ClassBalancedLossArgumentModel(BaselineArgumentModel):
         encoder_model: AnyStr = 'bert-base-uncased', 
         lr: float = 0.00001, 
         value_types: int = 20, 
+        level1_value_types: int=54,
         warmup_steps: int = 1000
         ) -> None:
-        super().__init__(encoder_model, lr, value_types, warmup_steps)
+        super().__init__(encoder_model, lr, value_types, level1_value_types, warmup_steps)
 
-    def compute_loss(self, logits, targets):
-        class_freq = torch.tensor(config.label_freq, device=self.device)
+    def compute_loss(self, logits, targets, level1=False):
+        if not level1:
+            class_freq = torch.tensor(config.label_freq, device=self.device)
+        else:
+            class_freq = torch.tensor(config.level1_label_freq, device=self.device)
         train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func='CB', 
@@ -272,12 +231,16 @@ class RbceFocalLossArgumentModel(BaselineArgumentModel):
         encoder_model: AnyStr = 'bert-base-uncased', 
         lr: float = 0.00001, 
         value_types: int = 20, 
+        level1_value_types: int=54,
         warmup_steps: int = 1000
         ) -> None:
-        super().__init__(encoder_model, lr, value_types, warmup_steps)
+        super().__init__(encoder_model, lr, value_types, level1_value_types, warmup_steps)
 
-    def compute_loss(self, logits, targets):
-        class_freq = torch.tensor(config.label_freq, device=self.device)
+    def compute_loss(self, logits, targets, level1=False):
+        if not level1:
+            class_freq = torch.tensor(config.label_freq, device=self.device)
+        else:
+            class_freq = torch.tensor(config.level1_label_freq, device=self.device)
         train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func='rebalance', 
@@ -295,8 +258,11 @@ class RbceFocalLossArgumentModel(BaselineArgumentModel):
 @ArgumentModel.register('ntr_focal_loss_argument_model') 
 class NtrFocalLossArgumentModel(BaselineArgumentModel):
 
-    def compute_loss(self, logits, targets):
-        class_freq = torch.tensor(config.label_freq, device=self.device)
+    def compute_loss(self, logits, targets, level1=False):
+        if not level1:
+            class_freq = torch.tensor(config.label_freq, device=self.device)
+        else:
+            class_freq = torch.tensor(config.level1_label_freq, device=self.device)
         train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func=None, 
@@ -312,8 +278,11 @@ class NtrFocalLossArgumentModel(BaselineArgumentModel):
 @ArgumentModel.register('db_no_focal_loss_argument_model')
 class DbNoFocalLossArgumentModel(BaselineArgumentModel):
 
-    def compute_loss(self, logits, targets):
-        class_freq = torch.tensor(config.label_freq, device=self.device)
+    def compute_loss(self, logits, targets, level1=False):
+        if not level1:
+            class_freq = torch.tensor(config.label_freq, device=self.device)
+        else:
+            class_freq = torch.tensor(config.level1_label_freq, device=self.device)
         train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func='rebalance', 
@@ -330,8 +299,11 @@ class DbNoFocalLossArgumentModel(BaselineArgumentModel):
 @ArgumentModel.register('class_balanced_ntr_loss_argument_model')
 class ClassBalancedNtrLossArgumentModel(BaselineArgumentModel):
 
-    def compute_loss(self, logits, targets):
-        class_freq = torch.tensor(config.label_freq, device=self.device)
+    def compute_loss(self, logits, targets, level1=False):
+        if not level1:
+            class_freq = torch.tensor(config.label_freq, device=self.device)
+        else:
+            class_freq = torch.tensor(config.level1_label_freq, device=self.device)
         train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func='CB', 
@@ -348,8 +320,11 @@ class ClassBalancedNtrLossArgumentModel(BaselineArgumentModel):
 @ArgumentModel.register('distribution_balanced_loss_argument_model')
 class DistributionBalancedLossArgumentModel(BaselineArgumentModel):
 
-    def compute_loss(self, logits, targets):
-        class_freq = torch.tensor(config.label_freq, device=self.device)
+    def compute_loss(self, logits, targets, level1=False):
+        if not level1:
+            class_freq = torch.tensor(config.label_freq, device=self.device)
+        else:
+            class_freq = torch.tensor(config.level1_label_freq, device=self.device)
         train_num = torch.tensor(config.train_num, device=self.device)
         loss_func = ResampleLoss(
             reweight_func='rebalance', 

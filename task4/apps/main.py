@@ -28,13 +28,13 @@ def parse_arguments():
 
     parser.add_argument('--data_module_type', type=str, default='baseline_argument_data_module',help='')
     parser.add_argument('--dataset_type', type=str, default='baseline_argument_dataset', help='')
-    parser.add_argument('--model_type', type=str, default='threshold_layer_argument_model', help='')
+    parser.add_argument('--model_type', type=str, default='baseline_argument_model', help='')
     parser.add_argument('--encoder_model', type=str, default='bert-base-uncased', help='')
     parser.add_argument('--batch_size', type=int, default=16, help='')
     parser.add_argument('--max_epochs', type=int, default=1, help='')
     parser.add_argument('--monitor', type=str, default='val_f1', help='a metric determined to monitor the best model')
     parser.add_argument('--gpus', type=int, default=-1, help='')
-    parser.add_argument('--cross_validation', type=int, default=5, help='make k-fold cross validation')
+    parser.add_argument('--cross_validation', type=int, default=1, help='make k-fold cross validation')
     
     args = parser.parse_args()
 
@@ -55,18 +55,25 @@ def k_fold(k: int=10):
     l1 = pd.read_csv(Path(config.train_file['labels']).as_posix(), delimiter='\t')
     l2 = pd.read_csv(Path(config.validate_file['labels']).as_posix(), delimiter='\t')
     l = pd.concat([l1, l2])
+    level1_1 = pd.read_csv(Path(config.train_file['level1-labels']).as_posix(), delimiter='\t')
+    level1_2 = pd.read_csv(Path(config.validate_file['level1-labels']).as_posix(), delimiter='\t')
+    level1 = pd.concat([level1_1, level1_2])
     index = 0
     for train, val in kf.split(data):
         train_argument_file = config.kfold_data_path/'arguments-training_{}.tsv'.format(index)
         validation_argument_file = config.kfold_data_path/'arguments-validation_{}.tsv'.format(index)
         train_label_file = config.kfold_data_path/'labels-training_{}.tsv'.format(index)
+        train_level1_label_file = config.kfold_data_path/'level1-labels-training_{}.tsv'.format(index)
         validation_label_file = config.kfold_data_path/'labels-validation_{}.tsv'.format(index)
+        validation_level1_label_file = config.kfold_data_path/'level1-labels-validation_{}.tsv'.format(index)
         data.iloc[train].to_csv(train_argument_file, sep='\t', index=False)
         l.iloc[train].to_csv(train_label_file, sep='\t', index=False)
+        level1.iloc[train].to_csv(train_level1_label_file, sep='\t', index=False)
         data.iloc[val].to_csv(validation_argument_file, sep='\t', index=False)
         l.iloc[val].to_csv(validation_label_file, sep='\t', index=False)
+        level1.iloc[val].to_csv(validation_level1_label_file, sep='\t', index=False)
         index += 1
-        yield train_argument_file, train_label_file, validation_argument_file, validation_label_file
+        yield train_argument_file, train_label_file, train_level1_label_file, validation_argument_file, validation_label_file, validation_level1_label_file
         
 
 def get_model_earlystopping_callback(monitor='val_f1', mode:Union['max', 'min']='max', min_delta=0.001):
@@ -193,7 +200,7 @@ def show_args(args):
     logging.info(log_info)
 
 
-def main(args: argparse.Namespace, train_arguments_file, train_label_file, val_arguments_file, val_label_file):
+def main(args: argparse.Namespace, train_arguments_file, train_label_file, train_level1_label_file, val_arguments_file, val_label_file, val_level1_label_file):
     trainer = get_trainer(args)
     adm = ArgumentDataModule.from_params(Params({
         'type': args.data_module_type,
@@ -204,8 +211,10 @@ def main(args: argparse.Namespace, train_arguments_file, train_label_file, val_a
         'batch_size': args.batch_size,
         'train_arguments_file': train_arguments_file,
         'train_label_file': train_label_file,
+        'train_level1_label_file': train_level1_label_file,
         'val_arguments_file': val_arguments_file,
-        'val_label_file': val_label_file
+        'val_label_file': val_label_file,
+        'val_level1_label_file': val_level1_label_file
     }))
 
     params = Params({
@@ -240,9 +249,9 @@ if __name__ == '__main__':
     show_args(args)
 
     if args.cross_validation == 1:
-        main(args, config.train_file['arguments'], config.train_file['labels'], config.validate_file['arguments'], config.validate_file['labels'])
+        main(args, config.train_file['arguments'], config.train_file['labels'], config.train_file['level1-labels'], config.validate_file['arguments'], config.validate_file['labels'], config.validate_file['level1-labels'])
     else:
-        for train_arguments_file, train_label_file, val_arguments_file, val_label_file in k_fold(args.cross_validation):
+        for train_arguments_file, train_label_file, train_level1_label_file, val_arguments_file, val_label_file, val_level1_label_file in k_fold(args.cross_validation):
             main(args, train_arguments_file, train_label_file, val_arguments_file, val_label_file)
 
     sys.exit(0)

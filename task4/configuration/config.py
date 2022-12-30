@@ -44,6 +44,19 @@ LABEL_NAME = ['Self-direction: thought', 'Self-direction: action', 'Stimulation'
     'Universalism: nature', 'Universalism: tolerance', 'Universalism: objectivity']
 #LABEL_NAME = ['Self-direction: thought', 'Self-direction: action', ]
 
+LEVEL1_LABEL_NAME = ['Be creative', 'Be curious', 'Have freedom of thought', 'Be choosing own goals',
+                     'Be independent', 'Have freedom of action', 'Have privacy', 'Have an exciting life', 'Have a varied life',
+                     'Be daring', 'Have pleasure', 'Be ambitious', 'Have success', 'Be capable', 'Be intellectual', 'Be courageous',
+                     'Have influence', 'Have the right to command', 'Have wealth', 'Have social recognition', 'Have a good reputation',
+                     'Have a sense of belonging', 'Have good health', 'Have no debts', 'Be neat and tidy', 'Have a comfortable life',
+                     'Have a safe country', 'Have a stable society', 'Be respecting traditions', 'Be holding religious faith', 'Be compliant',
+                     'Be self-disciplined', 'Be behaving properly', 'Be polite', 'Be honoring elders', 'Be humble',
+                     'Have life accepted as is', 'Be helpful', 'Be honest', 'Be forgiving', 'Have the own family secured',
+                     'Be loving', 'Be responsible', 'Have loyalty towards friends', 'Have equality', 'Be just', 'Have a world at peace',
+                     'Be protecting the environment', 'Have harmony with nature', 'Have a world of beauty', 'Be broadminded',
+                     'Have the wisdom to accept others', 'Be logical', 'Have an objective view'
+                     ]
+
 
 # label freq
 import pandas as pd
@@ -51,6 +64,12 @@ data = pd.read_csv(train_file['labels'], header=0, delimiter='\t', names=LABEL_N
 train_num = len(data)
 label_freq = [data[column].sum() for column in LABEL_NAME]
 label_ratio = [freq/train_num for freq in label_freq]
+del data	
+
+data = pd.read_csv(train_file['level1-labels'], header=0, delimiter='\t', names=LEVEL1_LABEL_NAME)
+train_num = len(data)
+level1_label_freq = [data[column].sum() for column in LEVEL1_LABEL_NAME]
+level1_label_ratio = [freq/train_num for freq in level1_label_freq]
 del data	
 
 
