@@ -151,7 +151,7 @@ def write_test_results(test_results: List, out_file: Union[AnyStr, bytes, os.Pat
             f.write("\t".join([str(int(field)) for field in item]))
             f.write("\n")
 
-def validate_mode(trainer: pl.Trainer, model: ArgumentModel, data_module: pl.LightningDataModule): 
+def validate_model(trainer: pl.Trainer, model: ArgumentModel, data_module: pl.LightningDataModule): 
     val_results = []
     preds = trainer.predict(model=model, dataloaders=data_module.val_dataloader())
     for argument_id, batch_result in preds:
@@ -228,7 +228,7 @@ def main(args: argparse.Namespace, train_arguments_file, train_label_file, train
     logging.info('get best_checkpoint file: {}'.format(best_checkpoint))
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
     logging.info('recording predictions of validation file....')
-    val_results = validate_mode(trainer, argument_model, adm)
+    val_results = validate_model(trainer, argument_model, adm)
     value_by_monitor = argument_model.get_metric()
     trainer.validate(model=argument_model, datamodule=adm)
     write_eval_performance(args, value_by_monitor, config.performance_log)
