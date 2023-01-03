@@ -99,6 +99,54 @@ class PremiseArgumentDataset(BaselineArgumentDataset):
         return argument_id, input_ids, token_type_ids, attention_mask, label_ids, level1_label_ids
 
 
+@ArgumentsDataset.register('rewrite_argument_dataset')
+class RewriteArgumentDataset(BaselineArgumentDataset):
+    def encode_input(self, argument_item: ArgumentItem, label_item: LabelItem, level1_label_item: Level1LabelItem) -> Tuple[str, List[int], List[int], List[int], List[int]]:
+        argument_id = argument_item.argument_id
+        if 'should not' in argument_item.conclusion:
+            if argument_item.stance == 'in favor of':
+                pass
+            else:
+                argument_item.conclusion = argument_item.conclusion.replace('should not', 'should')
+            text = argument_item.premise + self.tokenizer.sep_token + argument_item.conclusion
+        elif 'should' in argument_item.conclusion:
+            if argument_item.stance == 'in favor of':
+                pass
+            else:
+                argument_item.conclusion = argument_item.conclusion.replace('should', 'should not')
+            text = argument_item.premise + self.tokenizer.sep_token + argument_item.conclusion
+        elif 'do not need to' in argument_item.conclusion or "don't need to" in argument_item.conclusion:
+            if argument_item.stance == 'in favor of':
+                pass
+            else:
+                argument_item.conclusion = argument_item.conclusion.replace('do not need to', 'need to')
+                argument_item.conclusion = argument_item.conclusion.replace("don't need to", 'need to')
+            text = argument_item.premise + self.tokenizer.sep_token + argument_item.conclusion
+        elif 'need to' in argument_item.conclusion or 'needs to' in argument_item.conclusion:
+            if argument_item.stance == 'in favor of':
+                pass
+            else:
+                argument_item.conclusion = argument_item.conclusion.replace('need to', 'do not need to')
+                argument_item.conclusion = argument_item.conclusion.replace('needs to', 'do not need to')
+            text = argument_item.premise + self.tokenizer.sep_token + argument_item.conclusion
+        else:
+            if argument_item.stance == 'in favor of':
+                text = argument_item.premise + self.tokenizer.sep_token + 'we are in favor of that ' + argument_item.conclusion
+            else:
+                text = argument_item.premise + self.tokenizer.sep_token + 'we are against that ' + argument_item.conclusion
+        outputs = self.tokenizer(text)
+        input_ids, token_type_ids, attention_mask = outputs['input_ids'], outputs.get('token_type_ids', None), outputs['attention_mask']
+        if token_type_ids is None:
+            token_type_ids = [0] * len(input_ids)
+        if label_item:
+            label_ids = label_item.label
+            level1_label_ids = level1_label_item.level1_label
+        else:
+            label_ids = None
+            level1_label_ids = None
+        return argument_id, input_ids, token_type_ids, attention_mask, label_ids, level1_label_ids
+
+
 @ArgumentsDataset.register('label_match_argument_dataset')
 class LabelMatchArgumentDataset(BaselineArgumentDataset):
     def encode_input(self, argument_item: ArgumentItem, label_item: LabelItem) -> Tuple[str, List[int], List[int], List[int], List[int]]:

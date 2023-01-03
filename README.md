@@ -22,3 +22,5 @@ All the depended packages are listed in requirements.txt
 
 ### some experiments
 At first stage, we used all the fields to encode information with transformers-based models. But we found just precise is vital for the model performance.
+
+The best encoder model is roberta-large, compared with bert-base-uncased, bert-large-uncased, albert, etc.
