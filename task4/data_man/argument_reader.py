@@ -115,25 +115,22 @@ class RewriteArgumentDataset(BaselineArgumentDataset):
             else:
                 argument_item.conclusion = argument_item.conclusion.replace('should', 'should not')
             text = argument_item.premise + self.tokenizer.sep_token + argument_item.conclusion
-        elif 'do not need to' in argument_item.conclusion or "don't need to" in argument_item.conclusion:
+        elif 'do not need' in argument_item.conclusion or "don't need" in argument_item.conclusion:
             if argument_item.stance == 'in favor of':
                 pass
             else:
-                argument_item.conclusion = argument_item.conclusion.replace('do not need to', 'need to')
-                argument_item.conclusion = argument_item.conclusion.replace("don't need to", 'need to')
+                argument_item.conclusion = argument_item.conclusion.replace('do not need', 'need')
+                argument_item.conclusion = argument_item.conclusion.replace("don't need", 'need')
             text = argument_item.premise + self.tokenizer.sep_token + argument_item.conclusion
-        elif 'need to' in argument_item.conclusion or 'needs to' in argument_item.conclusion:
+        elif 'need' in argument_item.conclusion or 'needs' in argument_item.conclusion:
             if argument_item.stance == 'in favor of':
                 pass
             else:
-                argument_item.conclusion = argument_item.conclusion.replace('need to', 'do not need to')
-                argument_item.conclusion = argument_item.conclusion.replace('needs to', 'do not need to')
+                argument_item.conclusion = argument_item.conclusion.replace('need', 'do not need')
+                argument_item.conclusion = argument_item.conclusion.replace('needs', 'do not need')
             text = argument_item.premise + self.tokenizer.sep_token + argument_item.conclusion
         else:
-            if argument_item.stance == 'in favor of':
-                text = argument_item.premise + self.tokenizer.sep_token + 'we are in favor of that ' + argument_item.conclusion
-            else:
-                text = argument_item.premise + self.tokenizer.sep_token + 'we are against that ' + argument_item.conclusion
+            text = argument_item.premise
         outputs = self.tokenizer(text)
         input_ids, token_type_ids, attention_mask = outputs['input_ids'], outputs.get('token_type_ids', None), outputs['attention_mask']
         if token_type_ids is None:
@@ -265,7 +262,7 @@ if __name__ == "__main__":
     adm = ArgumentDataModule.from_params(Params({
         'type': 'baseline_argument_data_module',
         'reader': Params({
-            'type': 'baseline_argument_dataset'    
+            'type': 'rewrite_argument_dataset'    
         }),
         'batch_size': 2,
         'train_arguments_file': config.train_file['arguments'],
@@ -278,8 +275,7 @@ if __name__ == "__main__":
     adm.setup(stage='fit')
     t_train = adm.train_dataloader()
     for batch in t_train:
-        print(batch)
-        break
+        pass
     t_val = adm.val_dataloader()
     for batch in t_val:
         print(batch)
