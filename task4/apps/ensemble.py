@@ -45,6 +45,11 @@ def convert_poll_map_to_result(poll_map: Dict[AnyStr, Dict[AnyStr, List]], out_f
     data.to_csv(out_file, sep='\t', index=False)
 
 
+def vote(preds_files: List[AnyStr], f1_files: List[AnyStr], out_file: Union[AnyStr, os.PathLike]):
+    poll_map = vote_by_f1(preds_files, f1_files)
+    convert_poll_map_to_result(poll_map=poll_map, out_file=out_file)
+
+
 if __name__ == "__main__":
     preds_files = ['val_f1=0.47.tsv']
     f1_files = ['metrics.tsv']

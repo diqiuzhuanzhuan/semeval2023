@@ -20,6 +20,7 @@ import torch
 from task4.configuration import config
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
 from task4.data_man.meta_data import get_header_from_label_file
+from task4.apps.ensemble import vote
 
 
 def parse_arguments():
@@ -227,22 +228,24 @@ def main(args: argparse.Namespace, train_arguments_file, train_label_file, train
     _, best_checkpoint = save_model(trainer, model_name=args.model_type)
     logging.info('get best_checkpoint file: {}'.format(best_checkpoint))
     argument_model = load_model(ArgumentModel.by_name(args.model_type), model_file=best_checkpoint)
-    logging.info('recording predictions of validation file....')
-    val_results = validate_model(trainer, argument_model, adm)
-    value_by_monitor = argument_model.get_metric()
+    logging.info('recording performance log....')
     trainer.validate(model=argument_model, datamodule=adm)
+    value_by_monitor = argument_model.get_metric()
     write_eval_performance(args, value_by_monitor, config.performance_log)
     parent, file = generate_result_file_parent(trainer, args, value_by_monitor)
     out_file = config.output_path/parent/'val/'/file
+    val_results = validate_model(trainer, argument_model, adm)
+    logging.info('recording predictions of validation file....')
     write_test_results(test_results=val_results, out_file=out_file)
     #write performance metrics for future reference
-    out_file = config.output_path/parent/'metrics.tsv'
-    write_eval_performance(args, value_by_monitor, out_file)
+    metric_file = config.output_path/parent/'metrics.tsv'
+    write_eval_performance(args, value_by_monitor, metric_file)
     logging.info('recording predictions of test file....')
     test_results = test_model(trainer, argument_model, adm)
     parent, file = generate_result_file_parent(trainer, args, value_by_monitor)
     out_file = config.output_path/parent/file
     write_test_results(test_results=test_results, out_file=out_file)
+    return metric_file, out_file
 
 if __name__ == '__main__':
     args = parse_arguments()
@@ -251,7 +254,12 @@ if __name__ == '__main__':
     if args.cross_validation == 1:
         main(args, config.train_file['arguments'], config.train_file['labels'], config.train_file['level1-labels'], config.validate_file['arguments'], config.validate_file['labels'], config.validate_file['level1-labels'])
     else:
+        metric_files, test_preds_files = [], []
+        out_file = config.test_data_path/'labels.tsv'
         for train_arguments_file, train_label_file, train_level1_label_file, val_arguments_file, val_label_file, val_level1_label_file in k_fold(args.cross_validation):
-            main(args, train_arguments_file, train_label_file, val_arguments_file, val_label_file)
+            metric_file, test_preds_file = main(args, train_arguments_file, train_label_file, train_level1_label_file, val_arguments_file, val_label_file, val_level1_label_file)
+            metric_files.append(metric_file)
+            test_preds_files.append(test_preds_file)
+        vote(test_preds_file, metric_files, out_file)
 
     sys.exit(0)
