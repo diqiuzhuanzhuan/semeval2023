@@ -28,7 +28,22 @@ The best encoder model is roberta-large, compared with bert-base-uncased, bert-l
 
 ### submission records
 ```
-
+└── task4
+    ├── apps
+    ├── bin
+    ├── configuration
+    ├── data
+    │   ├── kfold
+    │   ├── submission            -------- 提交文件所在的目录
+    │   │   └── labels_1.tsv        
+    │   ├── test_data
+    │   ├── training_data
+    │   └── validate_data
+    ├── data_man
+    ├── logs
+    ├── metric
+    ├── modeling
+    └── papers
 ```
 1. 文件名：
    labels_1.tsv
