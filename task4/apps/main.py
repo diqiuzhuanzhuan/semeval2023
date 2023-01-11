@@ -260,6 +260,21 @@ if __name__ == '__main__':
             metric_file, test_preds_file = main(args, train_arguments_file, train_label_file, train_level1_label_file, val_arguments_file, val_label_file, val_level1_label_file)
             metric_files.append(metric_file)
             test_preds_files.append(test_preds_file)
-        vote(test_preds_file, metric_files, out_file)
+        vote(test_preds_files, metric_files, out_file)
+        voted_files = {
+            'metric_files': metric_files,
+            'test_preds_files': test_preds_files
+        }
+        can_vote_file = config.test_data_path/'can_vote_file.csv'
+        if not Path(can_vote_file).exists():
+            data = None
+        else:
+            data = pd.read_csv(can_vote_file)
+        data = pd.concat([pd.DataFrame.from_dict(voted_files), data])
+        data.to_csv(can_vote_file, index=False)
+        all_voted_files = data.to_dict()
+        out_file = config.test_data_path/'all_voted_labels.tsv'
+        vote(all_voted_files['test_preds_files'], all_voted_files['metric_files'], out_file)
+
 
     sys.exit(0)
