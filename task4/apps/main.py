@@ -233,10 +233,10 @@ def main(args: argparse.Namespace, train_arguments_file, train_label_file, train
     value_by_monitor = argument_model.get_metric()
     write_eval_performance(args, value_by_monitor, config.performance_log)
     parent, file = generate_result_file_parent(trainer, args, value_by_monitor)
-    out_file = config.output_path/parent/'val/'/file
+    val_out_file = config.output_path/parent/'val/'/file
     val_results = validate_model(trainer, argument_model, adm)
     logging.info('recording predictions of validation file....')
-    write_test_results(test_results=val_results, out_file=out_file)
+    write_test_results(test_results=val_results, out_file=val_out_file)
     #write performance metrics for future reference
     metric_file = config.output_path/parent/'metrics.tsv'
     write_eval_performance(args, value_by_monitor, metric_file)
@@ -245,19 +245,35 @@ def main(args: argparse.Namespace, train_arguments_file, train_label_file, train
     parent, file = generate_result_file_parent(trainer, args, value_by_monitor)
     out_file = config.output_path/parent/file
     write_test_results(test_results=test_results, out_file=out_file)
-    return metric_file, out_file
+    return metric_file, val_out_file, out_file
 
 if __name__ == '__main__':
     args = parse_arguments()
     show_args(args)
 
+    metric_files, test_preds_files = [], []
     if args.cross_validation == 1:
-        main(args, config.train_file['arguments'], config.train_file['labels'], config.train_file['level1-labels'], config.validate_file['arguments'], config.validate_file['labels'], config.validate_file['level1-labels'])
+        can_vote_file = config.test_data_path/'non_cross_validation_can_vote_file.csv'
+        metric_file, val_preds_file, _ = main(args, config.train_file['arguments'], config.train_file['labels'], config.train_file['level1-labels'], config.validate_file['arguments'], config.validate_file['labels'], config.validate_file['level1-labels'])
+        metric_files.append(metric_file)
+        test_preds_files.append(val_preds_file)
+        voted_files = {
+            'metric_files': metric_files,
+            'test_preds_files': test_preds_files
+        }
+        if not Path(can_vote_file).exists():
+            data = None
+        else:
+            data = pd.read_csv(can_vote_file)
+        data = pd.concat([pd.DataFrame.from_dict(voted_files), data])
+        data.to_csv(can_vote_file, index=False)
+        all_voted_files = data
+        out_file = config.test_data_path/'all_voted_labels.tsv'
+        vote(all_voted_files['test_preds_files'].to_list(), all_voted_files['metric_files'].to_list(), out_file)
     else:
-        metric_files, test_preds_files = [], []
         out_file = config.test_data_path/'labels.tsv'
         for train_arguments_file, train_label_file, train_level1_label_file, val_arguments_file, val_label_file, val_level1_label_file in k_fold(args.cross_validation):
-            metric_file, test_preds_file = main(args, train_arguments_file, train_label_file, train_level1_label_file, val_arguments_file, val_label_file, val_level1_label_file)
+            metric_file, _, test_preds_file = main(args, train_arguments_file, train_label_file, train_level1_label_file, val_arguments_file, val_label_file, val_level1_label_file)
             metric_files.append(metric_file)
             test_preds_files.append(test_preds_file)
         vote(test_preds_files, metric_files, out_file)
@@ -272,9 +288,9 @@ if __name__ == '__main__':
             data = pd.read_csv(can_vote_file)
         data = pd.concat([pd.DataFrame.from_dict(voted_files), data])
         data.to_csv(can_vote_file, index=False)
-        all_voted_files = data.to_dict()
+        all_voted_files = data
         out_file = config.test_data_path/'all_voted_labels.tsv'
-        vote(all_voted_files['test_preds_files'], all_voted_files['metric_files'], out_file)
+        vote(all_voted_files['test_preds_files'].to_list(), all_voted_files['metric_files'].to_list(), out_file)
 
 
     sys.exit(0)
