@@ -38,8 +38,6 @@ class ArgumentDataset:
     dataset_path: str
     arguments: List[ArgumentItem]
 
-    
-
 def get_id_to_type():
     return_map = dict()
     for i, ele in enumerate(config.LABEL_NAME):

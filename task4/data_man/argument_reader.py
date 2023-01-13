@@ -17,6 +17,8 @@ from task4.data_man.meta_data import ArgumentItem, LabelItem, Level1LabelItem
 from allennlp.common.registrable import Registrable
 from allennlp.common.params import Params
 from transformers import AutoTokenizer
+import collections
+import random
 
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 class ArgumentsDataset(Dataset, Registrable):
@@ -43,7 +45,9 @@ class ArgumentsDataset(Dataset, Registrable):
     def read_data(self, 
                   argument_file: Union[AnyStr, os.PathLike], 
                   label_file: Optional[Union[AnyStr, os.PathLike]]=None, 
-                  level1_label_file: Optional[Union[AnyStr, os.PathLike]]=None):
+                  level1_label_file: Optional[Union[AnyStr, os.PathLike]]=None,
+                  stage: AnyStr=None
+                  ):
         self.instances = read_arguments_from_file(argument_file)
         if not label_file:
             self.labels = None
@@ -97,6 +101,63 @@ class PremiseArgumentDataset(BaselineArgumentDataset):
             label_ids = None
             level1_label_ids = None
         return argument_id, input_ids, token_type_ids, attention_mask, label_ids, level1_label_ids
+
+
+@ArgumentsDataset.register('premise_augment_argument_dataset')
+class PremiseAugmentArgumentDataset(BaselineArgumentDataset):
+    def read_data(self, 
+                  argument_file: Union[AnyStr, os.PathLike], 
+                  label_file: Optional[Union[AnyStr, os.PathLike]]=None, 
+                  level1_label_file: Optional[Union[AnyStr, os.PathLike]]=None,
+                  stage: AnyStr=None
+                  ):
+        self.instances = read_arguments_from_file(argument_file)
+        if not label_file:
+            self.labels = None
+            self.level1_labels = None
+        else:
+            self.labels = read_labels_from_file(label_file)
+            self.level1_labels = read_level1_labels_from_file(level1_label_file)
+
+            if len(self.instances) != len(self.labels) != len(self.level1_labels):
+                raise ValueError('arguments lenght is not equal to label length.')
+            if stage == 'validate':
+                return
+            get_label_name_by_idx = { i: name for i, name in enumerate(config.LABEL_NAME)}
+            ratio_by_rare_idx = {idx: ratio for idx, ratio in enumerate(config.label_ratio) if ratio < 0.1}
+            augment_count_by_rare_idx = collections.defaultdict(int)
+            total_count = len(self.instances)
+            expect_count_by_rare_idx = {idx: round(total_count * (0.15 - ratio_by_rare_idx[idx])) for idx in ratio_by_rare_idx}
+            for index in range(total_count):
+                label_item = self.labels[index]
+                level1_label_item = self.level1_labels[index]
+                instance = self.instances[index]
+                for idx, label in enumerate(label_item.label):
+                    if idx in ratio_by_rare_idx: # need augment
+                        if augment_count_by_rare_idx[idx] > expect_count_by_rare_idx[idx]:
+                            continue
+                        choice = random.randint(0, total_count-1)
+                        augment_argument_id = self.labels[choice].argument_id + label_item.argument_id
+                        json_dict = {config.LABEL_NAME[i]:l1 or l2 for i, (l1, l2) in enumerate(zip(label_item.label, self.labels[choice].label))}
+                        json_dict['Argument ID'] = augment_argument_id
+                        augment_item = LabelItem.from_dict(json_dict)
+                        for jdx, _ in enumerate(augment_item.label):
+                            if jdx in ratio_by_rare_idx: 
+                                augment_count_by_rare_idx[jdx] += 1
+                        json_dict = {config.LEVEL1_LABEL_NAME[i]:l1 or l2 for i, (l1, l2) in enumerate(zip(level1_label_item.level1_label, self.level1_labels[choice].level1_label))}
+                        json_dict['Argument ID'] = augment_argument_id,
+                        augment_level1_label_item = Level1LabelItem.from_dict(json_dict)
+                        augment_instance = ArgumentItem.from_dict({
+                            'Argument ID': augment_argument_id,
+                            'Conclusion': "",
+                            'Stance': "",
+                            'Premise': self.instances[choice].premise + '.' + instance.premise
+                        })
+                        self.instances.append(augment_instance)
+                        self.labels.append(augment_item)
+                        self.level1_labels.append(augment_level1_label_item)
+
+            logging.info('augment data count is {}.'.format(len(self.instances)-total_count))  
 
 
 @ArgumentsDataset.register('rewrite_argument_dataset')
@@ -235,7 +296,7 @@ class BaselineArgumentDataModule(ArgumentDataModule):
         return torch.utils.data.DataLoader(train_reader, batch_size=self.batch_size, collate_fn=self.collate_batch, shuffle=True, num_workers=8)
 
     def val_dataloader(self):
-        self.reader.read_data(self.val_arguments_file, self.val_label_file, self.val_level1_label_file)
+        self.reader.read_data(self.val_arguments_file, self.val_label_file, self.val_level1_label_file, stage='validate')
         val_reader = deepcopy(self.reader)
         return torch.utils.data.DataLoader(val_reader, batch_size=self.batch_size, collate_fn=self.collate_batch, num_workers=8)
 
@@ -262,7 +323,7 @@ if __name__ == "__main__":
     adm = ArgumentDataModule.from_params(Params({
         'type': 'baseline_argument_data_module',
         'reader': Params({
-            'type': 'rewrite_argument_dataset'    
+            'type': 'premise_augment_argument_dataset'   
         }),
         'batch_size': 2,
         'train_arguments_file': config.train_file['arguments'],
@@ -275,7 +336,7 @@ if __name__ == "__main__":
     adm.setup(stage='fit')
     t_train = adm.train_dataloader()
     for batch in t_train:
-        pass
+        break
     t_val = adm.val_dataloader()
     for batch in t_val:
         print(batch)
