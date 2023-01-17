@@ -151,7 +151,8 @@ class PremiseAugmentArgumentDataset(BaselineArgumentDataset):
                             'Argument ID': augment_argument_id,
                             'Conclusion': "",
                             'Stance': "",
-                            'Premise': self.instances[choice].premise + '.' + instance.premise
+                            'Premise': self.instances[choice].premise + '.' + instance.premise \
+                                if random.randint(0, 1) == 0 else instance.premise + '.' + self.instances[choice].premise
                         })
                         self.instances.append(augment_instance)
                         self.labels.append(augment_item)
