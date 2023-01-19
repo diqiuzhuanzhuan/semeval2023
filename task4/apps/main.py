@@ -19,6 +19,7 @@ from task4.configuration.config import logging
 import torch
 from task4.configuration import config
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
+from task4.data_man.badcases import calc_metric_by_file
 from task4.data_man.meta_data import get_header_from_label_file
 from task4.apps.ensemble import vote
 
@@ -270,6 +271,10 @@ if __name__ == '__main__':
         all_voted_files = data
         out_file = config.test_data_path/'all_voted_labels.tsv'
         vote(all_voted_files['test_preds_files'].to_list(), all_voted_files['metric_files'].to_list(), out_file)
+        ensemble_metric = calc_metric_by_file(label_file=config.validate_file['labels'], pred_file=out_file)
+        logging.info('ensemble_metric is below: ')
+        logging.info(ensemble_metric)
+        
     else:
         out_file = config.test_data_path/'labels.tsv'
         for train_arguments_file, train_label_file, train_level1_label_file, val_arguments_file, val_label_file, val_level1_label_file in k_fold(args.cross_validation):
