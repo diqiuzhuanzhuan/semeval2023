@@ -14,8 +14,8 @@ from torch.utils.data import Dataset
 from task4.configuration.config import logging
 from task4.configuration import config
 from task4.data_man.meta_data import ArgumentItem, LabelItem, Level1LabelItem
-from allennlp.common.registrable import Registrable
-from allennlp.common.params import Params
+from poros.poros_common.registrable import Registrable
+from poros.poros_common.params import Params
 from transformers import AutoTokenizer
 import collections
 import random

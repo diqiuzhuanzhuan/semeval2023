@@ -3,8 +3,8 @@
 # email: diqiuzhuanzhuan@gmail.com
 
 
-from allennlp.common.registrable import Registrable
-from allennlp.common.params import Params
+from poros.poros_common.registrable import Registrable
+from poros.poros_common.params import Params
 import pytorch_lightning as pl
 from typing import AnyStr, Any, Union, Optional
 from transformers import AutoModel

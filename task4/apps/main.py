@@ -11,7 +11,7 @@ import os, re, sys
 import time
 from tqdm import tqdm
 from typing import AnyStr, Dict, List, Union
-from allennlp.common.params import Params
+from poros.poros_common.params import Params
 import pytorch_lightning as pl
 from task4.data_man.argument_reader import ArgumentDataModule
 from task4.modeling.model import ArgumentModel
